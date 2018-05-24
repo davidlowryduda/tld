@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import operator
+import hashlib
 from optparse import OptionParser
 
 
@@ -50,13 +51,34 @@ class TaskDict():
         kind = 'tasks'
         tasks = dict(getattr(self, kind).items())
 #        tasks.sort(key=operator.itemgetter('id'))
-        for t in tasks.values():
-            start = '{} -'.format(t['id'])
-            print(start + ' ' + t['text'])
+        for id_, prefix in self._prefixes(tasks).items():
+            start = '{} -'.format(prefix)
+            print(start + ' ' + tasks[id_]['text'])
 
     def _hash(self, text):
-        self.counter += 1
-        return self.counter
+        """
+        Return the SHA1 hash of the input string.
+        """
+        bytestring = text.encode(encoding='utf-8')
+        return hashlib.sha1(bytestring).hexdigest()
+
+    def _prefixes(self, ids):
+        """
+        Return a mapping of ids to prefixes.
+
+        Each prefix is the shortest possible substring of the ID that
+        uniquely identifies it among the given group of IDs.
+        """
+        prefixes = {}
+        for id_ in ids:
+            others = set(ids).difference([id_])
+            # iteratively test if id prefix is long enough to be unique
+            for i in range(1, len(id_)+1):
+                prefix = id_[:i]
+                if not any(map(lambda other: other.startswith(prefix), others)):
+                    prefixes[id_] = prefix
+                    break
+        return prefixes
 
 
 def build_parser():

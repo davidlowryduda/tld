@@ -1,6 +1,6 @@
 
-import unittest
 import contextlib
+import unittest
 from io import StringIO
 from optparse import OptionParser
 
@@ -16,16 +16,18 @@ class Basic_Task_Structure(unittest.TestCase):
         self.td = None
 
     def test_add(self):
+        task1_id = '3fa2e7254e7ce263b186a7ab33dbc492f4138f6d'
+        task2_id = '3ea913db45595a91c19c50ce6f977444fa69e82a'
         goal = {
-                 1: {'id': 1, 'text': "test task 1"},
-                 2: {'id': 2, 'text': "test task 2"},
+                 task1_id: {'id': task1_id, 'text': "test task 1"},
+                 task2_id: {'id': task2_id, 'text': "test task 2"},
                }
         self.assertEqual(self.td.tasks, goal)
 
     def test_print(self):
         tmp_stdout = StringIO()
-        goal = ("1 - test task 1\n"
-                "2 - test task 2\n")
+        goal = ("3f - test task 1\n"
+                "3e - test task 2\n")
         with contextlib.redirect_stdout(tmp_stdout):
             self.td.print_list()
         self.assertEqual(tmp_stdout.getvalue(), goal)
