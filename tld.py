@@ -200,11 +200,6 @@ def _build_parser():
     """
     parser = OptionParser()
 
-    parser.add_option("-a", "--add",
-                      dest="add",
-                      action="store_true", default=False,
-                      help="add text to task (default)")
-
     parser.add_option("-l", "--list",
                       dest="name", default="tasks",
                       help="examine LIST",

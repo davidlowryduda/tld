@@ -138,12 +138,6 @@ class IOTests(unittest.TestCase):
 
 
 class BasicParserOperation(unittest.TestCase):
-    def test_add(self):
-        input_args = ["-a", "test task 1"]
-        (options, args) = _build_parser().parse_args(input_args)
-        self.assertTrue(options.add)
-        self.assertTrue(args[0] == "test task 1")
-
     def test_list(self):
         input_args = ["-l", "othertasks"]
         (options, _) = _build_parser().parse_args(input_args)
@@ -169,7 +163,7 @@ class IntegrationTests(unittest.TestCase):
 
     def test_sample_run(self):
         # Add a task to the file
-        input_args = ["-l", "integration_task_test", "-a", "test task 1"]
+        input_args = ["-l", "integration_task_test", "test task 1"]
         main(input_args=input_args)
         with open("integration_task_test", "r") as tfile:
             lines = tfile.readlines()
@@ -177,7 +171,7 @@ class IntegrationTests(unittest.TestCase):
             self.assertTrue(lines[0].strip(), expected_line)
 
         # Add a second task
-        input_args = ["-l", "integration_task_test", "-a", "test task 2"]
+        input_args = ["-l", "integration_task_test", "test task 2"]
         main(input_args=input_args)
         with open("integration_task_test", "r") as tfile:
             lines = tfile.readlines()
