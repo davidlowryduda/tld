@@ -44,7 +44,7 @@ class TaskDict():
                     tasks = map(self._task_from_taskline, tasklines)
                     for task in tasks:
                         getattr(self, kind)[task['id']] = task
-
+        return
 
     def add_task(self, text):
         """
@@ -52,6 +52,27 @@ class TaskDict():
         """
         id_ = self._hash(text)
         self.tasks[id_] = {'id': id_, 'text': text}
+        return
+
+    def delete_finished(self):
+        """
+        Clears the 'done' list (and file) of tasks.
+        """
+        self.done = {}
+        return
+
+    def finish_task(self, prefix):
+        """
+        Remove a task with associated prefix.
+        """
+        matches = list(
+                   filter(lambda id_: id_.startswith(prefix), self.tasks.keys())
+                  )
+        if len(matches) > 1:
+            raise IOError("Ambiguous prefix. Unable to continue.")
+        task = self.tasks.pop(matches[0])
+        self.done[task['id']] = task
+        return
 
     def write(self):
         """
@@ -140,23 +161,35 @@ class TaskDict():
 
 def build_parser():
     parser = OptionParser()
-    parser.add_option("-a",
-                      action="store_true",
+    parser.add_option("-a", "--add",
                       dest="add",
-                      default=False,
+                      action="store_true", default=False,
                       help="add text to task (default)")
-    parser.add_option("-l",
-                      dest="name",
-                      default="tasks",
+    parser.add_option("-l", "--list",
+                      dest="name", default="tasks",
                       help="examine LIST",
                       metavar="LIST")
+    parser.add_option("-f", "--finish",
+                      dest="finish",
+                      help="mark TASK as finished",
+                      metavar="TASK")
+    parser.add_option("-D", "--delete-finished",
+                      dest="delete_finished",
+                      action="store_true", default=False,
+                      help="delete finished items to save space")
     return parser
 
 if __name__ == "__main__":
     td = TaskDict()
     (options, args) = build_parser().parse_args()
     text = ' '.join(args)
-    if text:
+    if options.finish:
+        td.finish_task(options.finish)
+        td.write()
+    elif options.delete_finished:
+        td.delete_finished()
+        td.write()
+    elif text:
         td.add_task(text)
         td.write()
     else:
