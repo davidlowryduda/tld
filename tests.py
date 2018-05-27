@@ -27,13 +27,22 @@ class Basic_Task_Structure(unittest.TestCase):
 
     def test_print(self):
         tmp_stdout = StringIO()
-        goal = ("3f - test task 1\n"
-                "3e - test task 2\n")
+        goal = (
+                 "3e - test task 2\n"
+                 "3f - test task 1\n"
+               )
         with contextlib.redirect_stdout(tmp_stdout):
             self.td.print_list()
         self.assertEqual(tmp_stdout.getvalue(), goal)
 
-    def test_fileio(self):
+
+class IO_tests(unittest.TestCase):
+
+    def test_write_tasks_to_file(self):
+        self.td = TaskDict(name='task_test')
+        self.td.add_task("test task 1")
+        self.td.add_task("test task 2")
+
         expected_line1 = "test task 2 | id:3ea913db45595a91c19c50ce6f977444fa69e82a"
         expected_line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
         self.td.write()
@@ -41,10 +50,28 @@ class Basic_Task_Structure(unittest.TestCase):
             lines = test_file.readlines()
             self.assertEqual(lines[0].strip(), expected_line1)
             self.assertEqual(lines[1].strip(), expected_line2)
+
+    def test_read_tasks_from_file(self):
+        line1 = "test task 2 | id:3ea913db45595a91c19c50ce6f977444fa69e82a"
+        line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
+        with open('task_test', 'w') as test_file:
+            test_file.write(line1 + '\n' + line2)
+        self.td = TaskDict(name='task_test')
+        task1_id = '3fa2e7254e7ce263b186a7ab33dbc492f4138f6d'
+        task2_id = '3ea913db45595a91c19c50ce6f977444fa69e82a'
+        goal = {
+                 task1_id: {'id': task1_id, 'text': "test task 1"},
+                 task2_id: {'id': task2_id, 'text': "test task 2"},
+               }
+        self.assertEqual(self.td.tasks, goal)
+
+    def tearDown(self):
         if os.path.exists('task_test'):
             os.remove('task_test')
         if os.path.exists('.task_test.done'):
             os.remove('.task_test.done')
+
+
 
 class Basic_Parser_Operation(unittest.TestCase):
     def test_add(self):

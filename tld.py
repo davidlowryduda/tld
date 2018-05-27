@@ -30,7 +30,21 @@ class TaskDict():
         self.tasks = {}
         self.done = {}
         self.name = name
-        self.counter = 0
+        filemap = (
+                    ('tasks', self.name),
+                    ('done', '.{}.done'.format(self.name)),
+                  )
+        for kind, filename in filemap:
+            if os.path.isdir(filename):
+                raise IOError("Invalid task file. File is a directory.")
+            if os.path.exists(filename):
+                with open(filename, 'r') as tfile:
+                    tasklines = [taskline.strip()
+                                 for taskline in tfile.readlines() if taskline]
+                    tasks = map(self._task_from_taskline, tasklines)
+                    for task in tasks:
+                        getattr(self, kind)[task['id']] = task
+
 
     def add_task(self, text):
         """
@@ -66,10 +80,16 @@ class TaskDict():
         """
         kind = 'tasks'
         tasks = dict(getattr(self, kind).items())
-#        tasks.sort(key=operator.itemgetter('id'))
         for id_, prefix in self._prefixes(tasks).items():
-            start = '{} -'.format(prefix)
-            print(start + ' ' + tasks[id_]['text'])
+            tasks[id_]['prefix'] = prefix
+        plen = max(
+                    map(lambda t: len(t['prefix']), tasks.values())
+                  ) if tasks else 0
+        task_values = list(tasks.values())
+        task_values.sort(key=operator.itemgetter('id'))
+        for taskval in task_values:
+            start = '{} -'.format(taskval['prefix'].ljust(plen))
+            print(start + ' ' + taskval['text'])
 
     def _hash(self, text):
         """
@@ -77,6 +97,27 @@ class TaskDict():
         """
         bytestring = text.encode(encoding='utf-8')
         return hashlib.sha1(bytestring).hexdigest()
+
+    def _task_from_taskline(self, taskline):
+        """
+        Parse a taskline from a tasks file.
+
+        A taskline should be in the format:
+
+            summary text ... | meta1:meta1_value,meta2:meta2_value,...
+
+        The task returned will be a dictionary such as:
+
+            { 'id': <hash id>,
+              'text': <summary text>,
+               ... other metadata ... }
+        """
+        text, _, meta = taskline.partition('|')
+        task = {'text': text.strip()}
+        for piece in meta.strip().split(','):
+            k, v = piece.split(':')
+            task[k.strip()] = v.strip()
+        return task
 
     def _prefixes(self, ids):
         """
