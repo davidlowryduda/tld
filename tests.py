@@ -1,4 +1,6 @@
-
+"""
+Test suite.
+"""
 import contextlib
 import unittest
 import os
@@ -7,55 +9,55 @@ from optparse import OptionParser
 
 from tld import TaskDict, build_parser, main
 
-task1_id = '3fa2e7254e7ce263b186a7ab33dbc492f4138f6d'
-task2_id = '3ea913db45595a91c19c50ce6f977444fa69e82a'
-task3_id = '417af60a94ee9643bada8dbd01a691af4e064155'
+TASK1_ID = '3fa2e7254e7ce263b186a7ab33dbc492f4138f6d'
+TASK2_ID = '3ea913db45595a91c19c50ce6f977444fa69e82a'
+TASK3_ID = '417af60a94ee9643bada8dbd01a691af4e064155'
 
-class Basic_Task_Structure(unittest.TestCase):
+class BasicTaskStructure(unittest.TestCase):
     def setUp(self):
-        self.td = TaskDict(name='task_test')
-        self.td.add_task("test task 1")
-        self.td.add_task("test task 2")
+        self.taskdict = TaskDict(name='task_test')
+        self.taskdict.add_task("test task 1")
+        self.taskdict.add_task("test task 2")
 
     def tearDown(self):
-        self.td = None
+        self.taskdict = None
 
     def test_add(self):
         goal = {
-                 task1_id: {'id': task1_id, 'text': "test task 1"},
-                 task2_id: {'id': task2_id, 'text': "test task 2"},
-               }
-        self.assertEqual(self.td.tasks, goal)
+            TASK1_ID: {'id': TASK1_ID, 'text': "test task 1"},
+            TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"},
+        }
+        self.assertEqual(self.taskdict.tasks, goal)
 
     def test_finish(self):
-        self.td.finish_task('3f')
-        task_goal = {task2_id: {'id': task2_id, 'text': "test task 2"}}
-        done_goal = {task1_id: {'id': task1_id, 'text': "test task 1"}}
-        self.assertEqual(self.td.tasks, task_goal)
-        self.assertEqual(self.td.done, done_goal)
+        self.taskdict.finish_task('3f')
+        task_goal = {TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"}}
+        done_goal = {TASK1_ID: {'id': TASK1_ID, 'text': "test task 1"}}
+        self.assertEqual(self.taskdict.tasks, task_goal)
+        self.assertEqual(self.taskdict.done, done_goal)
 
     def test_delete_finished(self):
-        self.td.finish_task('3f')
-        self.td.delete_finished()
-        task_goal = {task2_id: {'id': task2_id, 'text': "test task 2"}}
+        self.taskdict.finish_task('3f')
+        self.taskdict.delete_finished()
+        task_goal = {TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"}}
         done_goal = {}
-        self.assertEqual(self.td.tasks, task_goal)
-        self.assertEqual(self.td.done, done_goal)
+        self.assertEqual(self.taskdict.tasks, task_goal)
+        self.assertEqual(self.taskdict.done, done_goal)
 
     def test_print(self):
-        self.td.add_task("test task 3")
+        self.taskdict.add_task("test task 3")
         tmp_stdout = StringIO()
         goal = (
-                 "3e - test task 2\n"
-                 "3f - test task 1\n"
-                 "4  - test task 3\n"
-               )
+            "3e - test task 2\n"
+            "3f - test task 1\n"
+            "4  - test task 3\n"
+        )
         with contextlib.redirect_stdout(tmp_stdout):
-            self.td.print_list()
+            self.taskdict.print_list()
         self.assertEqual(tmp_stdout.getvalue(), goal)
 
 
-class IO_tests(unittest.TestCase):
+class IOTests(unittest.TestCase):
     def setUp(self):
         if os.path.isfile('tests'):
             raise IOError("tests is not a directory.")
@@ -64,17 +66,17 @@ class IO_tests(unittest.TestCase):
         return
 
     def test_write_tasks_to_file(self):
-        self.td = TaskDict(taskdir='tests', name='task_test')
-        self.td.add_task("test task 1")
-        self.td.add_task("test task 2")
-        self.td.add_task("test task 3")
-        self.td.finish_task('41')
+        taskdict = TaskDict(taskdir='tests', name='task_test')
+        taskdict.add_task("test task 1")
+        taskdict.add_task("test task 2")
+        taskdict.add_task("test task 3")
+        taskdict.finish_task('41')
 
         expected_line1 = "test task 2 | id:3ea913db45595a91c19c50ce6f977444fa69e82a"
         expected_line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
         expected_done_line = "test task 3 | id:417af60a94ee9643bada8dbd01a691af4e064155"
 
-        self.td.write()
+        taskdict.write()
         with open('tests/task_test', 'r') as test_file:
             lines = test_file.readlines()
             self.assertEqual(lines[0].strip(), expected_line1)
@@ -88,12 +90,12 @@ class IO_tests(unittest.TestCase):
         line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
         with open('tests/task_test', 'w') as test_file:
             test_file.write(line1 + '\n' + line2)
-        self.td = TaskDict(taskdir='tests', name='task_test')
+        taskdict = TaskDict(taskdir='tests', name='task_test')
         goal = {
-                 task1_id: {'id': task1_id, 'text': "test task 1"},
-                 task2_id: {'id': task2_id, 'text': "test task 2"},
-               }
-        self.assertEqual(self.td.tasks, goal)
+            TASK1_ID: {'id': TASK1_ID, 'text': "test task 1"},
+            TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"},
+        }
+        self.assertEqual(taskdict.tasks, goal)
 
     def tearDown(self):
         if os.path.exists('tests/task_test'):
@@ -104,30 +106,30 @@ class IO_tests(unittest.TestCase):
             os.rmdir('tests')
 
 
-class Basic_Parser_Operation(unittest.TestCase):
+class BasicParserOperation(unittest.TestCase):
     def test_add(self):
         input_args = ["-a", "test task 1"]
         (options, args) = build_parser().parse_args(input_args)
-        self.assertTrue(options.add == True)
+        self.assertTrue(options.add)
         self.assertTrue(args[0] == "test task 1")
 
     def test_list(self):
         input_args = ["-l", "othertasks"]
-        (options, args) = build_parser().parse_args(input_args)
+        (options, _) = build_parser().parse_args(input_args)
         self.assertTrue(options.name == "othertasks")
 
     def test_finish(self):
         input_args = ["-f", "3f"]
-        (options, args) = build_parser().parse_args(input_args)
+        (options, _) = build_parser().parse_args(input_args)
         self.assertTrue(options.finish == "3f")
 
     def test_delete_finished(self):
         input_args = ["-D"]
-        (options, args) = build_parser().parse_args(input_args)
-        self.assertTrue(options.delete_finished == True)
+        (options, _) = build_parser().parse_args(input_args)
+        self.assertTrue(options.delete_finished)
 
 
-class Integration_Tests(unittest.TestCase):
+class IntegrationTests(unittest.TestCase):
     def tearDown(self):
         if os.path.exists('integration_task_test'):
             os.remove('integration_task_test')
