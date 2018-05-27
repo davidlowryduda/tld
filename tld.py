@@ -128,7 +128,7 @@ class TaskDict():
                                          for metapair in metapairs)
                     tfile.write('%s | %s\n' % (task['text'], meta_str))
 
-    def print_list(self):
+    def print_list(self, quiet=False):
         """
         Output tasklist.
         """
@@ -142,8 +142,11 @@ class TaskDict():
         task_values = list(tasks.values())
         task_values.sort(key=operator.itemgetter('id'))
         for taskval in task_values:
-            start = '{} -'.format(taskval['prefix'].ljust(plen))
-            print(start + ' ' + taskval['text'])
+            if not quiet:
+                start = '{} - '.format(taskval['prefix'].ljust(plen))
+            else:
+                start = ''
+            print(start + taskval['text'])
 
     def _hash(self, text):
         """
@@ -223,6 +226,11 @@ def _build_parser():
     parser.add_option("-t", "--task-dir",
                       dest="taskdir", default="",
                       help="work in DIR", metavar="DIR")
+
+    parser.add_option("-q", "--quiet",
+                      dest="quiet",
+                      action="store_true", default=False,
+                      help="Print less detail (e.g. no task IDs)")
     return parser
 
 def main(input_args=None):
@@ -245,7 +253,7 @@ def main(input_args=None):
         taskdict.add_task(text)
         taskdict.write()
     else:
-        taskdict.print_list()
+        taskdict.print_list(quiet=options.quiet)
 
 if __name__ == "__main__":
     main()

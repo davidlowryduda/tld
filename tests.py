@@ -86,6 +86,18 @@ class BasicTaskStructure(unittest.TestCase):
         with contextlib.redirect_stdout(tmp_stdout):
             self.taskdict.print_list()
         self.assertEqual(tmp_stdout.getvalue(), goal)
+        return
+
+    def test_quiet_print(self):
+        tmp_stdout = StringIO()
+        goal = (
+            "test task 2\n"
+            "test task 1\n"
+        )
+        with contextlib.redirect_stdout(tmp_stdout):
+            self.taskdict.print_list(quiet=True)
+        self.assertEqual(tmp_stdout.getvalue(), goal)
+        return
 
 
 class IOTests(unittest.TestCase):
