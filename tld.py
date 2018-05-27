@@ -4,9 +4,10 @@
 A tool.
 """
 
+import hashlib
 import os
 import operator
-import hashlib
+import re
 from optparse import OptionParser
 
 
@@ -60,8 +61,10 @@ class TaskDict():
         matches = list(
             filter(lambda id_: id_.startswith(prefix), self.tasks.keys())
         )
+        if len(matches) == 0:
+            raise KeyError("Prefix {} not in tasklist.".format(prefix))
         if len(matches) > 1:
-            raise IOError("Ambiguous prefix. Unable to continue.")
+            raise IOError("Ambiguous prefix: {}.".format(prefix))
         return self.tasks[matches[0]]
 
     def add_task(self, text):
@@ -77,6 +80,22 @@ class TaskDict():
         Clears the 'done' list (and file) of tasks.
         """
         self.done = {}
+        return
+
+    def edit_task(self, prefix, text):
+        """
+        Edit the task with given prefix to contain given text.
+
+        Allow also perl-style `s/old/new` replacements.
+        """
+        task = self[prefix]
+        # Allow perl-style s/old/new replacement
+        if text.startswith('s/') or text.startswith('/'):
+            text = text.lstrip('s/').strip('/')
+            find, _, repl = text.partition('/')
+            text = re.sub(find, repl, task['text'])
+        task['text'] = text
+        task['id'] = self._hash(text)
         return
 
     def finish_task(self, prefix):
@@ -173,7 +192,7 @@ class TaskDict():
         return prefixes
 
 
-def build_parser():
+def _build_parser():
     """
     Create the command line parser.
 
@@ -190,6 +209,11 @@ def build_parser():
                       dest="name", default="tasks",
                       help="examine LIST",
                       metavar="LIST")
+
+    parser.add_option("-e", "--edit",
+                      dest="edit", default="",
+                      help="edit TASK. Can also use s/old/new",
+                      metavar="TASK")
 
     parser.add_option("-f", "--finish",
                       dest="finish",
@@ -210,14 +234,17 @@ def main(input_args=None):
     """
     Primary entry point. Parse command line and interpret taskdict.
     """
-    (options, args) = build_parser().parse_args(args=input_args)
+    (options, args) = _build_parser().parse_args(args=input_args)
     taskdict = TaskDict(taskdir=options.taskdir, name=options.name)
-    text = ' '.join(args)
+    text = ' '.join(args).strip()
     if options.finish:
         taskdict.finish_task(options.finish)
         taskdict.write()
     elif options.delete_finished:
         taskdict.delete_finished()
+        taskdict.write()
+    elif options.edit:
+        taskdict.edit_task(options.edit, text)
         taskdict.write()
     elif text:
         taskdict.add_task(text)
