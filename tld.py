@@ -8,7 +8,7 @@ import hashlib
 import os
 import operator
 import re
-from optparse import OptionParser
+from optparse import OptionParser, OptionGroup
 
 
 class TaskDict():
@@ -201,36 +201,41 @@ def _build_parser():
 
     Note: this uses optparse, which is (apparently) deprecated.
     """
-    parser = OptionParser()
+    usage = "Usage: %prog [-d DIR] [-l LIST] [options] [TEXT]"
+    parser = OptionParser(usage=usage)
 
-    parser.add_option("-l", "--list",
-                      dest="name", default="tasks",
-                      help="examine LIST",
-                      metavar="LIST")
+    actions = OptionGroup(parser, "Actions",
+        "If no actions are specified the TEXT will be added as a new task.")
+    actions.add_option("-e", "--edit",
+            dest="edit", default="",
+            help="edit TASK. Can also use s/old/new",
+            metavar="TASK")
+    actions.add_option("-f", "--finish",
+            dest="finish",
+            help="mark TASK as finished",
+            metavar="TASK")
+    actions.add_option("-D", "--delete-finished",
+            dest="delete_finished",
+            action="store_true", default=False,
+            help="delete finished items to save space")
+    parser.add_option_group(actions)
 
-    parser.add_option("-e", "--edit",
-                      dest="edit", default="",
-                      help="edit TASK. Can also use s/old/new",
-                      metavar="TASK")
+    config = OptionGroup(parser, "Configuration Options")
+    config.add_option("-l", "--list",
+           dest="name", default="tasks",
+           help="examine LIST",
+           metavar="LIST")
+    config.add_option("-t", "--task-dir",
+           dest="taskdir", default="",
+           help="work in DIR", metavar="DIR")
+    parser.add_option_group(config)
 
-    parser.add_option("-f", "--finish",
-                      dest="finish",
-                      help="mark TASK as finished",
-                      metavar="TASK")
-
-    parser.add_option("-D", "--delete-finished",
-                      dest="delete_finished",
-                      action="store_true", default=False,
-                      help="delete finished items to save space")
-
-    parser.add_option("-t", "--task-dir",
-                      dest="taskdir", default="",
-                      help="work in DIR", metavar="DIR")
-
-    parser.add_option("-q", "--quiet",
-                      dest="quiet",
-                      action="store_true", default=False,
-                      help="Print less detail (e.g. no task IDs)")
+    output = OptionGroup(parser, "Output Options")
+    output.add_option("-q", "--quiet",
+           dest="quiet",
+           action="store_true", default=False,
+           help="Print less detail (e.g. no task IDs)")
+    parser.add_option_group(output)
     return parser
 
 def main(input_args=None):
