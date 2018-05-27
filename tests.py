@@ -1,6 +1,7 @@
 
 import contextlib
 import unittest
+import os
 from io import StringIO
 from optparse import OptionParser
 
@@ -8,7 +9,7 @@ from tld import TaskDict, build_parser
 
 class Basic_Task_Structure(unittest.TestCase):
     def setUp(self):
-        self.td = TaskDict()
+        self.td = TaskDict(name='task_test')
         self.td.add_task("test task 1")
         self.td.add_task("test task 2")
 
@@ -31,6 +32,19 @@ class Basic_Task_Structure(unittest.TestCase):
         with contextlib.redirect_stdout(tmp_stdout):
             self.td.print_list()
         self.assertEqual(tmp_stdout.getvalue(), goal)
+
+    def test_fileio(self):
+        expected_line1 = "test task 2 | id:3ea913db45595a91c19c50ce6f977444fa69e82a"
+        expected_line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
+        self.td.write()
+        with open('task_test', 'r') as test_file:
+            lines = test_file.readlines()
+            self.assertEqual(lines[0].strip(), expected_line1)
+            self.assertEqual(lines[1].strip(), expected_line2)
+        if os.path.exists('task_test'):
+            os.remove('task_test')
+        if os.path.exists('.task_test.done'):
+            os.remove('.task_test.done')
 
 class Basic_Parser_Operation(unittest.TestCase):
     def test_add(self):

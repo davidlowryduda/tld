@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 import operator
 import hashlib
 from optparse import OptionParser
@@ -42,7 +43,22 @@ class TaskDict():
         """
         Saves tasklist.
         """
-        pass
+        filemap = (
+                    ('tasks', self.name),
+                    ('done', '.{}.done'.format(self.name)),
+                  )
+        for kind, filename in filemap:
+            if os.path.isdir(filename):
+                raise IOError("Invalid task file. File is a directory.")
+            with open(filename, 'w') as tfile:
+                tasks = list(getattr(self, kind).values())
+                tasks.sort(key=operator.itemgetter('id'))
+                for task in tasks:
+                    metapairs = [metapair for metapair in task.items()
+                                          if metapair[0] != 'text']
+                    meta_str = ", ".join("{}:{}".format(*metapair)
+                                          for metapair in metapairs)
+                    tfile.write('%s | %s\n' % (task['text'], meta_str))
 
     def print_list(self):
         """
@@ -101,6 +117,6 @@ if __name__ == "__main__":
     text = ' '.join(args)
     if text:
         td.add_task(text)
-#        td.write()
+        td.write()
     else:
         td.print_list()
