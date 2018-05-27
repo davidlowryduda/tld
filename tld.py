@@ -179,9 +179,9 @@ def build_parser():
                       help="delete finished items to save space")
     return parser
 
-if __name__ == "__main__":
-    td = TaskDict()
-    (options, args) = build_parser().parse_args()
+def main(input_args=None):
+    (options, args) = build_parser().parse_args(args=input_args)
+    td = TaskDict(options.name)
     text = ' '.join(args)
     if options.finish:
         td.finish_task(options.finish)
@@ -194,3 +194,6 @@ if __name__ == "__main__":
         td.write()
     else:
         td.print_list()
+
+if __name__ == "__main__":
+    main()

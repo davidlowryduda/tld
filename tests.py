@@ -5,7 +5,7 @@ import os
 from io import StringIO
 from optparse import OptionParser
 
-from tld import TaskDict, build_parser
+from tld import TaskDict, build_parser, main
 
 task1_id = '3fa2e7254e7ce263b186a7ab33dbc492f4138f6d'
 task2_id = '3ea913db45595a91c19c50ce6f977444fa69e82a'
@@ -95,7 +95,6 @@ class IO_tests(unittest.TestCase):
             os.remove('.task_test.done')
 
 
-
 class Basic_Parser_Operation(unittest.TestCase):
     def test_add(self):
         input_args = ["-a", "test task 1"]
@@ -117,6 +116,46 @@ class Basic_Parser_Operation(unittest.TestCase):
         input_args = ["-D"]
         (options, args) = build_parser().parse_args(input_args)
         self.assertTrue(options.delete_finished == True)
+
+
+class Integration_Tests(unittest.TestCase):
+    def tearDown(self):
+        if os.path.exists('integration_task_test'):
+            os.remove('integration_task_test')
+        if os.path.exists('.integration_task_test.done'):
+            os.remove('.integration_task_test.done')
+
+    def test_sample_run(self):
+        # Add a task to the file
+        input_args = ["-l", "integration_task_test", "-a", "test task 1"]
+        main(input_args=input_args)
+        with open("integration_task_test", "r") as tfile:
+            lines = tfile.readlines()
+            expected_line = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
+            self.assertTrue(lines[0].strip(), expected_line)
+
+        # Add a second task
+        input_args = ["-l", "integration_task_test", "-a", "test task 2"]
+        main(input_args=input_args)
+        with open("integration_task_test", "r") as tfile:
+            lines = tfile.readlines()
+            expected_line1 = "test task 2 | id:3ea913db45595a91c19c50ce6f977444fa69e82a"
+            expected_line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
+            self.assertTrue(lines[0].strip(), expected_line1)
+            self.assertTrue(lines[1].strip(), expected_line2)
+
+        # Mark first task done
+        input_args = ["-l", "integration_task_test", "-f", "3e"]
+        main(input_args=input_args)
+        with open("integration_task_test", "r") as tfile:
+            lines = tfile.readlines()
+            expected_line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
+            self.assertTrue(lines[0].strip(), expected_line2)
+        with open(".integration_task_test.done", 'r') as tfiledone:
+            lines = tfiledone.readlines()
+            expected_line1 = "test task 2 | id:3ea913db45595a91c19c50ce6f977444fa69e82a"
+            self.assertTrue(lines[0].strip(), expected_line1)
+        return
 
 
 if __name__ == "__main__":
