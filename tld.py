@@ -30,7 +30,7 @@ class TaskDict():
         self.tasks = {}
         self.done = {}
         self.name = name
-        self.taskdir = taskdir
+        self.taskdir = os.path.expanduser(taskdir)
         filemap = (
                     ('tasks', self.name),
                     ('done', '.{}.done'.format(self.name)),
