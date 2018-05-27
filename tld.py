@@ -23,22 +23,24 @@ class TaskDict():
           ... other metadata ...
         }
     """
-    def __init__(self, name='tasks'):
+    def __init__(self, taskdir='.', name='tasks'):
         """
         Read tasks from taskfiles if they exist.
         """
         self.tasks = {}
         self.done = {}
         self.name = name
+        self.taskdir = taskdir
         filemap = (
                     ('tasks', self.name),
                     ('done', '.{}.done'.format(self.name)),
                   )
         for kind, filename in filemap:
-            if os.path.isdir(filename):
+            path = os.path.join(os.path.realpath(self.taskdir), filename)
+            if os.path.isdir(path):
                 raise IOError("Invalid task file. File is a directory.")
-            if os.path.exists(filename):
-                with open(filename, 'r') as tfile:
+            if os.path.exists(path):
+                with open(path, 'r') as tfile:
                     tasklines = [taskline.strip()
                                  for taskline in tfile.readlines() if taskline]
                     tasks = map(self._task_from_taskline, tasklines)
@@ -83,9 +85,10 @@ class TaskDict():
                     ('done', '.{}.done'.format(self.name)),
                   )
         for kind, filename in filemap:
-            if os.path.isdir(filename):
+            path = os.path.join(os.path.realpath(self.taskdir), filename)
+            if os.path.isdir(path):
                 raise IOError("Invalid task file. File is a directory.")
-            with open(filename, 'w') as tfile:
+            with open(path, 'w') as tfile:
                 tasks = list(getattr(self, kind).values())
                 tasks.sort(key=operator.itemgetter('id'))
                 for task in tasks:
@@ -161,27 +164,35 @@ class TaskDict():
 
 def build_parser():
     parser = OptionParser()
+
     parser.add_option("-a", "--add",
                       dest="add",
                       action="store_true", default=False,
                       help="add text to task (default)")
+
     parser.add_option("-l", "--list",
                       dest="name", default="tasks",
                       help="examine LIST",
                       metavar="LIST")
+
     parser.add_option("-f", "--finish",
                       dest="finish",
                       help="mark TASK as finished",
                       metavar="TASK")
+
     parser.add_option("-D", "--delete-finished",
                       dest="delete_finished",
                       action="store_true", default=False,
                       help="delete finished items to save space")
+
+    parser.add_option("-t", "--task-dir",
+                      dest="taskdir", default="",
+                      help="work in DIR", metavar="DIR")
     return parser
 
 def main(input_args=None):
     (options, args) = build_parser().parse_args(args=input_args)
-    td = TaskDict(options.name)
+    td = TaskDict(taskdir=options.taskdir, name=options.name)
     text = ' '.join(args)
     if options.finish:
         td.finish_task(options.finish)

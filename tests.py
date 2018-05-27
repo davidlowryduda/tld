@@ -56,8 +56,15 @@ class Basic_Task_Structure(unittest.TestCase):
 
 
 class IO_tests(unittest.TestCase):
+    def setUp(self):
+        if os.path.isfile('tests'):
+            raise IOError("tests is not a directory.")
+        if not os.path.exists('tests'):
+            os.mkdir('tests')
+        return
+
     def test_write_tasks_to_file(self):
-        self.td = TaskDict(name='task_test')
+        self.td = TaskDict(taskdir='tests', name='task_test')
         self.td.add_task("test task 1")
         self.td.add_task("test task 2")
         self.td.add_task("test task 3")
@@ -68,20 +75,20 @@ class IO_tests(unittest.TestCase):
         expected_done_line = "test task 3 | id:417af60a94ee9643bada8dbd01a691af4e064155"
 
         self.td.write()
-        with open('task_test', 'r') as test_file:
+        with open('tests/task_test', 'r') as test_file:
             lines = test_file.readlines()
             self.assertEqual(lines[0].strip(), expected_line1)
             self.assertEqual(lines[1].strip(), expected_line2)
-        with open('.task_test.done', 'r') as test_file:
+        with open('tests/.task_test.done', 'r') as test_file:
             lines = test_file.readlines()
             self.assertEqual(lines[0].strip(), expected_done_line)
 
     def test_read_tasks_from_file(self):
         line1 = "test task 2 | id:3ea913db45595a91c19c50ce6f977444fa69e82a"
         line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
-        with open('task_test', 'w') as test_file:
+        with open('tests/task_test', 'w') as test_file:
             test_file.write(line1 + '\n' + line2)
-        self.td = TaskDict(name='task_test')
+        self.td = TaskDict(taskdir='tests', name='task_test')
         goal = {
                  task1_id: {'id': task1_id, 'text': "test task 1"},
                  task2_id: {'id': task2_id, 'text': "test task 2"},
@@ -89,10 +96,12 @@ class IO_tests(unittest.TestCase):
         self.assertEqual(self.td.tasks, goal)
 
     def tearDown(self):
-        if os.path.exists('task_test'):
-            os.remove('task_test')
-        if os.path.exists('.task_test.done'):
-            os.remove('.task_test.done')
+        if os.path.exists('tests/task_test'):
+            os.remove('tests/task_test')
+        if os.path.exists('tests/.task_test.done'):
+            os.remove('tests/.task_test.done')
+        if os.path.isdir('tests'):
+            os.rmdir('tests')
 
 
 class Basic_Parser_Operation(unittest.TestCase):
