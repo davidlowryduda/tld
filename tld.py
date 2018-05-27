@@ -51,6 +51,19 @@ class TaskDict():
                         getattr(self, kind)[task['id']] = task
         return
 
+    def __getitem__(self, prefix):
+        """
+        Return task with given prefix.
+
+        If more than one item found, raise an exception.
+        """
+        matches = list(
+            filter(lambda id_: id_.startswith(prefix), self.tasks.keys())
+        )
+        if len(matches) > 1:
+            raise IOError("Ambiguous prefix. Unable to continue.")
+        return self.tasks[matches[0]]
+
     def add_task(self, text):
         """
         Create a task with associated text.
@@ -70,12 +83,7 @@ class TaskDict():
         """
         Remove a task with associated prefix.
         """
-        matches = list(
-            filter(lambda id_: id_.startswith(prefix), self.tasks.keys())
-        )
-        if len(matches) > 1:
-            raise IOError("Ambiguous prefix. Unable to continue.")
-        task = self.tasks.pop(matches[0])
+        task = self.tasks.pop(self[prefix]['id'])
         self.done[task['id']] = task
         return
 
