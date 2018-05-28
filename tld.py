@@ -151,11 +151,10 @@ class TaskDict():
             tasklines.append('{} | {}\n'.format(task['text'], meta_str))
         return tasklines
 
-    def print_list(self, quiet=False, grep_string=''):
+    def print_list(self, kind='tasks', quiet=False, grep_string=''):
         """
         Output tasklist.
         """
-        kind = 'tasks'
         tasks = dict(getattr(self, kind).items())
         for id_, prefix in self._prefixes(tasks).items():
             tasks[id_]['prefix'] = prefix
@@ -276,6 +275,10 @@ def _build_parser():
     parser.add_option_group(config)
 
     output = OptionGroup(parser, "Output Options")
+    output.add_option("--done",
+           dest='done',
+           action="store_true", default=False,
+           help="List done tasks instead of unfinished ones.")
     output.add_option("-q", "--quiet",
            dest="quiet",
            action="store_true", default=False,
@@ -311,7 +314,9 @@ def main(input_args=None):
         taskdict.add_task(text)
         taskdict.write(options.delete_if_empty)
     else:
-        taskdict.print_list(quiet=options.quiet,
+        kind = 'tasks' if not options.done else 'done'
+        taskdict.print_list(kind=kind,
+                            quiet=options.quiet,
                             grep_string=options.grep_string)
 
 if __name__ == "__main__":

@@ -95,6 +95,26 @@ class BasicTaskStructure(unittest.TestCase):
         self.assertEqual(tmp_stdout.getvalue(), goal)
         return
 
+    def test_print_done(self):
+        self.taskdict.add_task("test task 3")
+        self.taskdict.finish_task('3f')
+        goal_task = (
+            "3 - test task 2\n"
+            "4 - test task 3\n"
+        )
+        goal_done = (
+            "3 - test task 1\n"
+        )
+        tmp_stdout_task = StringIO()
+        with contextlib.redirect_stdout(tmp_stdout_task):
+            self.taskdict.print_list()
+        self.assertEqual(tmp_stdout_task.getvalue(), goal_task)
+        tmp_stdout_done = StringIO()
+        with contextlib.redirect_stdout(tmp_stdout_done):
+            self.taskdict.print_list(kind='done')
+        self.assertEqual(tmp_stdout_done.getvalue(), goal_done)
+        return
+
     def test_quiet_print(self):
         tmp_stdout = StringIO()
         goal = (
