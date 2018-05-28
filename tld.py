@@ -121,13 +121,24 @@ class TaskDict():
             if os.path.isdir(path):
                 raise IOError("Invalid task file. File is a directory.")
             with open(path, 'w') as tfile:
-                tasks = list(getattr(self, kind).values())
-                for task in sorted(tasks, key=operator.itemgetter('id')):
-                    metapairs = [metapair for metapair in task.items()
-                                 if metapair[0] != 'text']
-                    meta_str = ", ".join("{}:{}".format(*metapair)
-                                         for metapair in metapairs)
-                    tfile.write('%s | %s\n' % (task['text'], meta_str))
+                tasks = sorted(getattr(self, kind).values(),
+                               key=operator.itemgetter('id'))
+                for taskline in self._tasklines_from_tasks(tasks):
+                    tfile.write(taskline)
+
+    def _tasklines_from_tasks(self, tasks):
+        """
+        Parse a set of tasks (e.g. taskdict.tasks.values()) into tasklines
+        suitable to be written to a file.
+        """
+        tasklines = []
+        for task in tasks:
+            metapairs = [metapair for metapair in task.items()
+                         if metapair[0] != 'text']
+            meta_str = ", ".join("{}:{}".format(*metapair)
+                                 for metapair in metapairs)
+            tasklines.append('{} | {}\n'.format(task['text'], meta_str))
+        return tasklines
 
     def print_list(self, quiet=False):
         """
