@@ -140,7 +140,7 @@ class TaskDict():
             tasklines.append('{} | {}\n'.format(task['text'], meta_str))
         return tasklines
 
-    def print_list(self, quiet=False):
+    def print_list(self, quiet=False, grep_string=''):
         """
         Output tasklist.
         """
@@ -154,6 +154,8 @@ class TaskDict():
         task_values = list(tasks.values())
         task_values.sort(key=operator.itemgetter('id'))
         for taskval in task_values:
+            if grep_string.lower() not in taskval['text'].lower():
+                continue
             if not quiet:
                 start = '{} - '.format(taskval['prefix'].ljust(plen))
             else:
@@ -251,6 +253,11 @@ def _build_parser():
            dest="quiet",
            action="store_true", default=False,
            help="Print less detail (e.g. no task IDs)")
+    output.add_option("-g", "--grep",
+           dest="grep_string",
+           default='',
+           help="Print only tasks containing WORD",
+           metavar="WORD")
     parser.add_option_group(output)
     return parser
 
@@ -274,7 +281,8 @@ def main(input_args=None):
         taskdict.add_task(text)
         taskdict.write()
     else:
-        taskdict.print_list(quiet=options.quiet)
+        taskdict.print_list(quiet=options.quiet,
+                            grep_string=options.grep_string)
 
 if __name__ == "__main__":
     main()

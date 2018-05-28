@@ -99,6 +99,16 @@ class BasicTaskStructure(unittest.TestCase):
         self.assertEqual(tmp_stdout.getvalue(), goal)
         return
 
+    def test_grep_print(self):
+        tmp_stdout = StringIO()
+        goal = (
+            "3e - test task 2\n"
+        )
+        with contextlib.redirect_stdout(tmp_stdout):
+            self.taskdict.print_list(grep_string='2')
+        self.assertEqual(tmp_stdout.getvalue(), goal)
+        return
+
 
 class IOTests(unittest.TestCase):
     def setUp(self):
