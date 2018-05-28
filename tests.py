@@ -138,6 +138,13 @@ class IOTests(unittest.TestCase):
             lines = test_file.readlines()
             self.assertEqual(lines[0].strip(), expected_done_line)
 
+    def test_delete_if_empty(self):
+        taskdict = TaskDict(taskdir='tests', name='task_test')
+        taskdict.write(True)
+        self.assertFalse(os.path.exists('tests/task_test'))
+        self.assertFalse(os.path.exists('tests/.task_test.done'))
+        return
+
     def test_read_tasks_from_file(self):
         line1 = "test task 2 | id:3ea913db45595a91c19c50ce6f977444fa69e82a"
         line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"

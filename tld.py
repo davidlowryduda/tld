@@ -108,7 +108,7 @@ class TaskDict():
         self.done[task['id']] = task
         return
 
-    def write(self):
+    def write(self, delete_if_empty=False):
         """
         Saves tasklist.
         """
@@ -120,11 +120,15 @@ class TaskDict():
             path = os.path.join(os.path.realpath(self.taskdir), filename)
             if os.path.isdir(path):
                 raise IOError("Invalid task file. File is a directory.")
-            with open(path, 'w') as tfile:
-                tasks = sorted(getattr(self, kind).values(),
-                               key=operator.itemgetter('id'))
-                for taskline in self._tasklines_from_tasks(tasks):
-                    tfile.write(taskline)
+            tasks = sorted(getattr(self, kind).values(),
+                    key=operator.itemgetter('id'))
+            if tasks or not delete_if_empty:
+                with open(path, 'w') as tfile:
+                    for taskline in self._tasklines_from_tasks(tasks):
+                        tfile.write(taskline)
+            elif not tasks and os.path.isfile(path):
+                os.remove(path)
+        return
 
     def _tasklines_from_tasks(self, tasks):
         """
@@ -254,6 +258,10 @@ def _build_parser():
     config.add_option("-t", "--task-dir",
            dest="taskdir", default="",
            help="work in DIR", metavar="DIR")
+    config.add_option("-d", "--delete-if-empty",
+           dest="delete_if_empty",
+           action="store_true", default=False,
+           help="delete the task file if it becomes empty")
     parser.add_option_group(config)
 
     output = OptionGroup(parser, "Output Options")
@@ -278,16 +286,16 @@ def main(input_args=None):
     text = ' '.join(args).strip()
     if options.finish:
         taskdict.finish_task(options.finish)
-        taskdict.write()
+        taskdict.write(options.delete_if_empty)
     elif options.delete_finished:
         taskdict.delete_finished()
-        taskdict.write()
+        taskdict.write(options.delete_if_empty)
     elif options.edit:
         taskdict.edit_task(options.edit, text)
-        taskdict.write()
+        taskdict.write(options.delete_if_empty)
     elif text:
         taskdict.add_task(text)
-        taskdict.write()
+        taskdict.write(options.delete_if_empty)
     else:
         taskdict.print_list(quiet=options.quiet,
                             grep_string=options.grep_string)
