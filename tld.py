@@ -46,7 +46,7 @@ class TaskDict():
             if os.path.exists(path):
                 with open(path, 'r') as tfile:
                     tasklines = [taskline.strip()
-                                 for taskline in tfile.readlines() if taskline]
+                                 for taskline in tfile if taskline]
                     tasks = map(self._task_from_taskline, tasklines)
                     for task in tasks:
                         getattr(self, kind)[task['id']] = task
@@ -90,9 +90,11 @@ class TaskDict():
         """
         task = self[prefix]
         # Allow perl-style s/old/new replacement
-        if text.startswith('s/') or text.startswith('/'):
-            text = text.lstrip('s/').strip('/')
+        if text.startswith('s/'):
+            text = text[2:].strip('/')
             find, _, repl = text.partition('/')
+            if not repl:
+                raise IOError("perl-string {} malformed.".format('s/' + text))
             text = re.sub(find, repl, task['text'])
         task['text'] = text
         task['id'] = self._hash(text)
@@ -120,8 +122,7 @@ class TaskDict():
                 raise IOError("Invalid task file. File is a directory.")
             with open(path, 'w') as tfile:
                 tasks = list(getattr(self, kind).values())
-                tasks.sort(key=operator.itemgetter('id'))
-                for task in tasks:
+                for task in sorted(tasks, key=operator.itemgetter('id')):
                     metapairs = [metapair for metapair in task.items()
                                  if metapair[0] != 'text']
                     meta_str = ", ".join("{}:{}".format(*metapair)
@@ -186,12 +187,16 @@ class TaskDict():
         prefixes = {}
         for id_ in ids:
             others = set(ids).difference([id_])
+            found = False
             # iteratively test if id prefix is long enough to be unique
             for i in range(1, len(id_)+1):
                 prefix = id_[:i]
                 if not any(map(lambda other: other.startswith(prefix), others)):
                     prefixes[id_] = prefix
+                    found = True
                     break
+            if not found:
+                raise KeyError("Unresolvable hash collision occurred.")
         return prefixes
 
 
