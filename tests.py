@@ -37,6 +37,13 @@ class BasicTaskStructure(unittest.TestCase):
         self.assertEqual(self.taskdict.tasks, task_goal)
         self.assertEqual(self.taskdict.done, done_goal)
 
+    def test_remove(self):
+        self.taskdict.remove_task('3f')
+        task_goal = {TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"}}
+        done_goal = {}
+        self.assertEqual(self.taskdict.tasks, task_goal)
+        self.assertEqual(self.taskdict.done, done_goal)
+
     def test_delete_finished(self):
         self.taskdict.finish_task('3f')
         self.taskdict.delete_finished()

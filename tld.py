@@ -102,10 +102,17 @@ class TaskDict():
 
     def finish_task(self, prefix):
         """
-        Remove a task with associated prefix.
+        Remove a task with associated prefix and mark it `done`.
         """
         task = self.tasks.pop(self[prefix]['id'])
         self.done[task['id']] = task
+        return
+
+    def remove_task(self, prefix):
+        """
+        Remove a task with associated prefix (without adding it to `done`).
+        """
+        task = self.tasks.pop(self[prefix]['id'])
         return
 
     def write(self, delete_if_empty=False):
@@ -244,6 +251,10 @@ def _build_parser():
             dest="finish",
             help="mark TASK as finished",
             metavar="TASK")
+    actions.add_option("-r", "--remove",
+            dest="remove",
+            help="remove TASK from list, without marking it 'done'.",
+            metavar="TASK")
     actions.add_option("-D", "--delete-finished",
             dest="delete_finished",
             action="store_true", default=False,
@@ -286,6 +297,9 @@ def main(input_args=None):
     text = ' '.join(args).strip()
     if options.finish:
         taskdict.finish_task(options.finish)
+        taskdict.write(options.delete_if_empty)
+    elif options.remove:
+        taskdict.remove_task(options.remove)
         taskdict.write(options.delete_if_empty)
     elif options.delete_finished:
         taskdict.delete_finished()
