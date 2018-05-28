@@ -192,7 +192,7 @@ class TaskDict():
                ... other metadata ... }
         """
         if '|' in taskline:
-            text, _, meta = taskline.partition('|')
+            text, _, meta = taskline.rpartition('|')
             task = {'text': text.strip()}
             for piece in meta.strip().split(','):
                 key, value = piece.split(':')
