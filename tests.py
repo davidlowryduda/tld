@@ -150,6 +150,18 @@ class IOTests(unittest.TestCase):
         }
         self.assertEqual(taskdict.tasks, goal)
 
+    def test_read_plain_tasks_from_file(self):
+        line1 = "test task 1"
+        line2 = "test task 2"
+        with open('tests/task_test', 'w') as test_file:
+            test_file.write(line1 + '\n' + line2)
+        taskdict = TaskDict(taskdir='tests', name='task_test')
+        goal = {
+            TASK1_ID: {'id': TASK1_ID, 'text': "test task 1"},
+            TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"},
+        }
+        self.assertEqual(taskdict.tasks, goal)
+
     def tearDown(self):
         if os.path.exists('tests/task_test'):
             os.remove('tests/task_test')

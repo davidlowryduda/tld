@@ -177,17 +177,25 @@ class TaskDict():
 
             summary text ... | meta1:meta1_value,meta2:meta2_value,...
 
+        If the taskline has only the summary text, then the hash and metadata
+        will be generated automatically upon reading. Thus it is possible to
+        edit the taskfile in a plain text editor simply.
+
         The task returned will be a dictionary such as:
 
             { 'id': <hash id>,
               'text': <summary text>,
                ... other metadata ... }
         """
-        text, _, meta = taskline.partition('|')
-        task = {'text': text.strip()}
-        for piece in meta.strip().split(','):
-            key, value = piece.split(':')
-            task[key.strip()] = value.strip()
+        if '|' in taskline:
+            text, _, meta = taskline.partition('|')
+            task = {'text': text.strip()}
+            for piece in meta.strip().split(','):
+                key, value = piece.split(':')
+                task[key.strip()] = value.strip()
+        else:
+            text = taskline.strip()
+            task = {'text': text, 'id': self._hash(text)}
         return task
 
     def _prefixes(self, ids):
@@ -256,7 +264,7 @@ def _build_parser():
     output.add_option("-g", "--grep",
            dest="grep_string",
            default='',
-           help="Print only tasks containing WORD",
+           help="Print only tasks containing WORD. This is case insensitive",
            metavar="WORD")
     parser.add_option_group(output)
     return parser
