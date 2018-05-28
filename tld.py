@@ -231,7 +231,7 @@ def _build_parser():
 
     Note: this uses optparse, which is (apparently) deprecated.
     """
-    usage = "Usage: %prog [-d DIR] [-l LIST] [options] [TEXT]"
+    usage = "Usage: %prog [-t DIR] [-l LIST] [options] [TEXT]"
     parser = OptionParser(usage=usage)
 
     actions = OptionGroup(parser, "Actions",
