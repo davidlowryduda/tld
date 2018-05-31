@@ -116,7 +116,7 @@ class TaskDict():
         """
         Remove a task with associated prefix (without adding it to `done`).
         """
-        task = self.tasks.pop(self[prefix]['id'])
+        self.tasks.pop(self[prefix]['id'])
         return
 
     def write(self, delete_if_empty=False):
@@ -155,7 +155,11 @@ class TaskDict():
             tasklines.append('{} | {}\n'.format(task['text'], meta_str))
         return tasklines
 
-    def print_list(self, kind='tasks', quiet=False, grep_string='', showtags=False):
+    def print_list(self,
+                   kind='tasks',
+                   quiet=False,
+                   grep_string='',
+                   showtags=False):
         """
         Output tasklist.
         """
@@ -179,6 +183,7 @@ class TaskDict():
             if showtags and tags:
                 report += ' | tags: ' + ', '.join(tags.split(','))
             print(report)
+        return
 
     def _hash(self, text):
         """

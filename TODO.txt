@@ -1,3 +1,2 @@
 Separate out edit-tag and include perl regex. | id:4ff1ba2bcab1af1436083b35439d0637bdb9baed; tags:Feature
-Add tests for tag system. | id:744c0626d8249847615b503e889890dfd36d7a7e; tags:Testing
-Consider allowing meta-grep. | id:e622f7d32edbd37c180d393bbcf429012f74d3c4; tags:Feature
+Consider allowing tag-grep. | id:5feec93004963e8edf40060c28d007b4c46e269c; tags:Feature

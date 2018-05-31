@@ -67,6 +67,37 @@ class BasicTaskStructure(unittest.TestCase):
         self.assertEqual(self.taskdict.tasks, goal)
         return
 
+    def test_tag(self):
+        """
+        Test that adding tags works.
+        """
+        self.taskdict.add_task("test task 3", tags=['This is a test', 'two'])
+        goal = {
+            TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"},
+            TASK1_ID: {'id': TASK1_ID, 'text': "test task 1"},
+            TASK3_ID: {'id': TASK3_ID,
+                       'text': "test task 3",
+                       'tags': "This is a test,two"}
+        }
+        self.assertEqual(self.taskdict.tasks, goal)
+        return
+
+    def test_edit_with_tag(self):
+        """
+        Test that editing a tag while editing changes the tag.
+        """
+        self.taskdict.add_task("test task 3", tags=['This is a test', 'two'])
+        self.taskdict.edit_task("417", "test task 3", tags=["Repl tag"])
+        goal = {
+            TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"},
+            TASK1_ID: {'id': TASK1_ID, 'text': "test task 1"},
+            TASK3_ID: {'id': TASK3_ID,
+                       'text': "test task 3",
+                       'tags': "Repl tag"}
+        }
+        self.assertEqual(self.taskdict.tasks, goal)
+        return
+
     def test_sub_replace_edit(self):
         """
         Test that one can edit tasks through `s/old/new` notation.
@@ -133,6 +164,22 @@ class BasicTaskStructure(unittest.TestCase):
         )
         with contextlib.redirect_stdout(tmp_stdout):
             self.taskdict.print_list(grep_string='2')
+        self.assertEqual(tmp_stdout.getvalue(), goal)
+        return
+
+    def test_print_with_tags(self):
+        """
+        Test that tags are printed when showtags=True.
+        """
+        tmp_stdout = StringIO()
+        self.taskdict.add_task("test task 3", tags=['This is a test', 'two'])
+        goal = (
+            "3e - test task 2\n"
+            "3f - test task 1\n"
+            "4  - test task 3 | tags: This is a test, two\n"
+        )
+        with contextlib.redirect_stdout(tmp_stdout):
+            self.taskdict.print_list(showtags=True)
         self.assertEqual(tmp_stdout.getvalue(), goal)
         return
 
@@ -267,6 +314,16 @@ class IntegrationTests(unittest.TestCase):
             lines = tfile.readlines()
             expected_line = "test task 4 | id:84328fb5212fb9f5a743101d9508414299370217"
             self.assertEqual(lines[0].strip(), expected_line, msg="Edit failed.")
+
+        # Add first task with tag
+        input_args = ['-l', 'integration_task_test', 'test task 1', '--tag', 'testtag']
+        main(input_args=input_args)
+        with open("integration_task_test", "r") as tfile:
+            lines = tfile.readlines()
+            expected_line1 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d; tags:testtag"
+            expected_line2 = "test task 4 | id:84328fb5212fb9f5a743101d9508414299370217"
+            self.assertEqual(lines[0].strip(), expected_line1)
+            self.assertEqual(lines[1].strip(), expected_line2)
         return
 
 
