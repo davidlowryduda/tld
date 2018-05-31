@@ -1,0 +1,9 @@
+# python boring
+
+__pycache__
+*.pyc
+
+
+# my own done files
+
+*.done
