@@ -67,12 +67,14 @@ class TaskDict():
             raise IOError("Ambiguous prefix: {}.".format(prefix))
         return self.tasks[matches[0]]
 
-    def add_task(self, text):
+    def add_task(self, text, tags=()):
         """
         Create a task with associated text.
         """
         id_ = self._hash(text)
         self.tasks[id_] = {'id': id_, 'text': text}
+        if tags:
+            self.tasks[id_]['tags'] = ','.join(tag for tag in tags)
         return
 
     def delete_finished(self):
@@ -82,11 +84,11 @@ class TaskDict():
         self.done = {}
         return
 
-    def edit_task(self, prefix, text):
+    def edit_task(self, prefix, text, tags=()):
         """
         Edit the task with given prefix to contain given text.
 
-        Allow also perl-style `s/old/new` replacements.
+        Allow also perl-style `s/old/new` replacements on text.
         """
         task = self[prefix]
         # Allow perl-style s/old/new replacement
@@ -98,6 +100,8 @@ class TaskDict():
             text = re.sub(find, repl, task['text'])
         task['text'] = text
         task['id'] = self._hash(text)
+        if tags:
+            task['tags'] = ','.join(tags)
         return
 
     def finish_task(self, prefix):
@@ -146,12 +150,12 @@ class TaskDict():
         for task in tasks:
             metapairs = [metapair for metapair in task.items()
                          if metapair[0] != 'text']
-            meta_str = ", ".join("{}:{}".format(*metapair)
+            meta_str = "; ".join("{}:{}".format(*metapair)
                                  for metapair in metapairs)
             tasklines.append('{} | {}\n'.format(task['text'], meta_str))
         return tasklines
 
-    def print_list(self, kind='tasks', quiet=False, grep_string=''):
+    def print_list(self, kind='tasks', quiet=False, grep_string='', showtags=False):
         """
         Output tasklist.
         """
@@ -170,7 +174,11 @@ class TaskDict():
                 start = '{} - '.format(taskval['prefix'].ljust(plen))
             else:
                 start = ''
-            print(start + taskval['text'])
+            report = start + taskval['text']
+            tags = taskval.get('tags', '')
+            if showtags and tags:
+                report += ' | tags: ' + ', '.join(tags.split(','))
+            print(report)
 
     def _hash(self, text):
         """
@@ -200,7 +208,7 @@ class TaskDict():
         if '|' in taskline:
             text, _, meta = taskline.rpartition('|')
             task = {'text': text.strip()}
-            for piece in meta.strip().split(','):
+            for piece in meta.strip().split(';'):
                 key, value = piece.split(':')
                 task[key.strip()] = value.strip()
         else:
@@ -241,53 +249,64 @@ def _build_parser():
     parser = OptionParser(usage=usage)
 
     actions = OptionGroup(parser, "Actions",
-        "If no actions are specified the TEXT will be added as a new task.")
+                          "If no actions are specified the TEXT "
+                          "will be added as a new task.")
     actions.add_option("-e", "--edit",
-            dest="edit", default="",
-            help="edit TASK. Can also use s/old/new",
-            metavar="TASK")
+                       dest="edit", default="",
+                       help="edit TASK. Can also use s/old/new",
+                       metavar="TASK")
     actions.add_option("-f", "--finish",
-            dest="finish",
-            help="mark TASK as finished",
-            metavar="TASK")
+                       dest="finish",
+                       help="mark TASK as finished",
+                       metavar="TASK")
     actions.add_option("-r", "--remove",
-            dest="remove",
-            help="remove TASK from list, without marking it 'done'.",
-            metavar="TASK")
+                       dest="remove",
+                       help="remove TASK from list, without marking it 'done'.",
+                       metavar="TASK")
     actions.add_option("-D", "--delete-finished",
-            dest="delete_finished",
-            action="store_true", default=False,
-            help="delete finished items to save space")
+                       dest="delete_finished",
+                       action="store_true", default=False,
+                       help="delete finished items to save space")
     parser.add_option_group(actions)
 
     config = OptionGroup(parser, "Configuration Options")
     config.add_option("-l", "--list",
-           dest="name", default="tasks",
-           help="examine LIST",
-           metavar="LIST")
+                      dest="name", default="tasks",
+                      help="examine LIST",
+                      metavar="LIST")
     config.add_option("-t", "--task-dir",
-           dest="taskdir", default="",
-           help="work in DIR", metavar="DIR")
+                      dest="taskdir", default="",
+                      help="work in DIR", metavar="DIR")
     config.add_option("-d", "--delete-if-empty",
-           dest="delete_if_empty",
-           action="store_true", default=False,
-           help="delete the task file if it becomes empty")
+                      dest="delete_if_empty",
+                      action="store_true", default=False,
+                      help="delete the task file if it becomes empty")
+    config.add_option("--tag",
+                      dest="opttag",
+                      action="append",
+                      help="add TAG to tags",
+                      metavar="TAG")
     parser.add_option_group(config)
 
     output = OptionGroup(parser, "Output Options")
     output.add_option("--done",
-           dest='done',
-           action="store_true", default=False,
-           help="List done tasks instead of unfinished ones.")
+                      dest='done',
+                      action="store_true", default=False,
+                      help="List done tasks instead of unfinished ones.")
     output.add_option("-q", "--quiet",
-           dest="quiet",
-           action="store_true", default=False,
-           help="Print less detail (e.g. no task IDs)")
+                      dest="quiet",
+                      action="store_true", default=False,
+                      help="Print less detail (e.g. no task IDs)")
     output.add_option("-g", "--grep",
-           dest="grep_string",
-           default='',
-           help="Print only tasks containing WORD. This is case insensitive",
-           metavar="WORD")
+                      dest="grep_string",
+                      default='',
+                      help=("Print only tasks containing WORD. "
+                            "This is case insensitive"),
+                      metavar="WORD")
+    output.add_option("--showtags",
+                      dest="showtags",
+                      action="store_true", default=False,
+                      help="Show tags.")
     parser.add_option_group(output)
     return parser
 
@@ -308,16 +327,17 @@ def main(input_args=None):
         taskdict.delete_finished()
         taskdict.write(options.delete_if_empty)
     elif options.edit:
-        taskdict.edit_task(options.edit, text)
+        taskdict.edit_task(options.edit, text, tags=options.opttag)
         taskdict.write(options.delete_if_empty)
     elif text:
-        taskdict.add_task(text)
+        taskdict.add_task(text, tags=options.opttag)
         taskdict.write(options.delete_if_empty)
     else:
         kind = 'tasks' if not options.done else 'done'
         taskdict.print_list(kind=kind,
                             quiet=options.quiet,
-                            grep_string=options.grep_string)
+                            grep_string=options.grep_string,
+                            showtags=options.showtags)
 
 if __name__ == "__main__":
     main()
