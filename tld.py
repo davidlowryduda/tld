@@ -1,7 +1,89 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-A tool.
+tld.py
+
+tld is a tool for people who want to do things, but who might also want a bit
+of organization.
+
+tld (pronounced "told", based off of Steve Losh's t.py but with a LD twist) is
+a simple command line tool that works like a (somewhat) minimal list manager.
+Calling
+
+    $ python tld.py This is a message.
+
+will create a file called `tasks` in the current directory and put "This is a
+message." (and some identifier) in that file. Calling it again will print
+the contents of the file.
+
+    $ python tld.py
+    3 - This is a message.
+
+The `3` at the start of the output is an identifier, and can be referenced.
+Calling
+
+    $ python tld.py -f 3
+
+will mark this message as "done" and move it to a file `.tasks.done` in the
+current directory.
+
+For more options, call
+
+    $ python tld.py -h
+
+or visit the github page https://github.com/davidlowryduda/tld.
+
+
+Tips and Tricks
+---------------
+
+For repeated use, one might use an alias like
+
+    $ alias tld='python /path/to/tld.py --task-dir /path/to/tasks --list Tfile'
+
+which will interact with the list `/path/to/tasks/Tfile`. Perhaps include
+`--date` to always include dates in the file if you like knowing when you added
+items, and display it later by calling
+
+    $ tld --showdate
+
+
+Author Info
+-----------
+
+This tool was written by David Lowry-Duda <david@lowryduda.com>. A version of
+this tool can be found on github at https://github.com/davidlowryduda/tld.
+
+This tool began as an experiment in understanding Steve Losh's implementation
+of t.py (which is elegant and more pure than tld.py), but leading to something
+more lasting.
+
+
+License Info
+------------
+
+This is released under the MIT License.
+
+
+Copyright (c) 2018 David Lowry-Duda <david@lowryduda.com>.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 """
 
 import datetime
@@ -186,6 +268,16 @@ class TaskDict():
             print(report)
         return
 
+
+def set_task_prefixes(tasks):
+    """
+    Assign computed prefixes to tasks.
+    """
+    for id_, prefix in _prefixes(tasks).items():
+        tasks[id_]['prefix'] = prefix
+    return
+
+
 def _build_parser():
     """
     Create the command line parser.
@@ -269,6 +361,41 @@ def _build_parser():
     return parser
 
 
+def _hash(text):
+    """
+    Return the SHA1 hash of the input string.
+    """
+    bytestring = text.encode(encoding='utf-8')
+    return hashlib.sha1(bytestring).hexdigest()
+
+
+def _prefixes(ids):
+    """
+    Return a mapping of ids to prefixes.
+
+    Each prefix is the shortest possible substring of the ID that
+    uniquely identifies it among the given group of IDs.
+    """
+    prefixes = {}
+    for id_ in ids:
+        others = set(ids).difference([id_])
+        found = False
+        # iteratively test if id prefix is long enough to be unique
+        for i in range(1, len(id_)+1):
+            prefix = id_[:i]
+            # The pf-prefix kwarg silences a pyling cell-var-from-loop warning.
+            # This is safe since prefix is set on the previous line. It would
+            # also work to use id_[:i] directly in loop, but I find that a bit
+            # harder to read.
+            if not any(map(lambda other, pf=prefix: other.startswith(pf), others)):
+                prefixes[id_] = prefix
+                found = True
+                break
+        if not found:
+            raise KeyError("Unresolvable hash collision occurred.")
+    return prefixes
+
+
 def _tasklines_from_tasks(tasks):
     """
     Parse a set of tasks (e.g. taskdict.tasks.values()) into tasklines
@@ -312,50 +439,6 @@ def _task_from_taskline(taskline):
         text = taskline.strip()
         task = {'text': text, 'id': _hash(text)}
     return task
-
-
-def _prefixes(ids):
-    """
-    Return a mapping of ids to prefixes.
-
-    Each prefix is the shortest possible substring of the ID that
-    uniquely identifies it among the given group of IDs.
-    """
-    prefixes = {}
-    for id_ in ids:
-        others = set(ids).difference([id_])
-        found = False
-        # iteratively test if id prefix is long enough to be unique
-        for i in range(1, len(id_)+1):
-            prefix = id_[:i]
-            # The pf-prefix kwarg silences a pyling cell-var-from-loop warning.
-            # This is safe since prefix is set on the previous line. It would
-            # also work to use id_[:i] directly in loop, but I find that a bit
-            # harder to read.
-            if not any(map(lambda other, pf=prefix: other.startswith(pf), others)):
-                prefixes[id_] = prefix
-                found = True
-                break
-        if not found:
-            raise KeyError("Unresolvable hash collision occurred.")
-    return prefixes
-
-
-def _hash(text):
-    """
-    Return the SHA1 hash of the input string.
-    """
-    bytestring = text.encode(encoding='utf-8')
-    return hashlib.sha1(bytestring).hexdigest()
-
-
-def set_task_prefixes(tasks):
-    """
-    Assign computed prefixes to tasks.
-    """
-    for id_, prefix in _prefixes(tasks).items():
-        tasks[id_]['prefix'] = prefix
-    return
 
 
 def main(input_args=None):

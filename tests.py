@@ -1,5 +1,25 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Test suite.
+Test suite for tld.py
+
+To run, call
+
+    $ python tests.py
+
+Note that this set of tests wants to create a directory 'tests' and will make
+files 'tests/task_test', 'tests/.task_test.done', 'integration_task_test', and
+'.integration_task_test.done'. If any of these files already exists, these
+tests will abort and print an error message.
+
+
+Other Information
+-----------------
+
+This was written by David Lowry-Duda <david@lowryduda.com>. This is available
+under the MIT License (https://opensource.org/licenses/MIT).
+
+For more information, see tld.py or https://github.com/davidlowryduda/tld.
 """
 import contextlib
 import datetime
@@ -497,4 +517,9 @@ class IntegrationTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    FILENAMES = ['integration_task_test', '.integration_task_test.done',
+                 'tests/task_test', 'tests/.task_test.done']
+    if any(os.path.exists(filename) for filename in FILENAMES):
+        raise IOError("One of the test_task files already exists. "
+                      "Aborting to not overwrite.")
     unittest.main(verbosity=2)
