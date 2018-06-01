@@ -2,10 +2,10 @@
 Test suite.
 """
 import contextlib
+import datetime
 import unittest
 import os
 from io import StringIO
-from optparse import OptionParser
 
 from tld import TaskDict, _build_parser, main
 
@@ -15,6 +15,9 @@ TASK3_ID = '417af60a94ee9643bada8dbd01a691af4e064155'
 TASK4_ID = '84328fb5212fb9f5a743101d9508414299370217'
 
 class BasicTaskStructure(unittest.TestCase):
+    """
+    A set of tests for each of the basic capabilities of a task dictionary.
+    """
     def setUp(self):
         self.taskdict = TaskDict(name='task_test')
         self.taskdict.add_task("test task 1")
@@ -24,6 +27,9 @@ class BasicTaskStructure(unittest.TestCase):
         self.taskdict = None
 
     def test_add(self):
+        """
+        Test basic adding of a task.
+        """
         goal = {
             TASK1_ID: {'id': TASK1_ID, 'text': "test task 1"},
             TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"},
@@ -31,6 +37,9 @@ class BasicTaskStructure(unittest.TestCase):
         self.assertEqual(self.taskdict.tasks, goal)
 
     def test_finish(self):
+        """
+        Test finishing of tasks. The task should appear in done.
+        """
         self.taskdict.finish_task('3f')
         task_goal = {TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"}}
         done_goal = {TASK1_ID: {'id': TASK1_ID, 'text': "test task 1"}}
@@ -38,6 +47,9 @@ class BasicTaskStructure(unittest.TestCase):
         self.assertEqual(self.taskdict.done, done_goal)
 
     def test_remove(self):
+        """
+        Test removal of tasks. The task should not appear in done.
+        """
         self.taskdict.remove_task('3f')
         task_goal = {TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"}}
         done_goal = {}
@@ -45,12 +57,30 @@ class BasicTaskStructure(unittest.TestCase):
         self.assertEqual(self.taskdict.done, done_goal)
 
     def test_delete_finished(self):
+        """
+        Test deletion of finished tasks.
+        """
         self.taskdict.finish_task('3f')
         self.taskdict.delete_finished()
         task_goal = {TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"}}
         done_goal = {}
         self.assertEqual(self.taskdict.tasks, task_goal)
         self.assertEqual(self.taskdict.done, done_goal)
+
+    def test_date(self):
+        """
+        Test that dates are saved correctly.
+        """
+        self.taskdict.add_task("test task 3", dated=True)
+        goal = {
+            TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"},
+            TASK1_ID: {'id': TASK1_ID, 'text': "test task 1"},
+            TASK3_ID: {'id': TASK3_ID,
+                       'text': "test task 3",
+                       'date': datetime.date.today()}
+        }
+        self.assertEqual(self.taskdict.tasks, goal)
+        return
 
     def test_edit(self):
         """
@@ -114,6 +144,9 @@ class BasicTaskStructure(unittest.TestCase):
         return
 
     def test_print(self):
+        """
+        Test basic print functionality.
+        """
         self.taskdict.add_task("test task 3")
         tmp_stdout = StringIO()
         goal = (
@@ -127,6 +160,9 @@ class BasicTaskStructure(unittest.TestCase):
         return
 
     def test_print_done(self):
+        """
+        Test the printing of the list of done tasks.
+        """
         self.taskdict.add_task("test task 3")
         self.taskdict.finish_task('3f')
         goal_task = (
@@ -147,6 +183,9 @@ class BasicTaskStructure(unittest.TestCase):
         return
 
     def test_quiet_print(self):
+        """
+        Test that quiet printing hides hashes.
+        """
         tmp_stdout = StringIO()
         goal = (
             "test task 2\n"
@@ -158,6 +197,9 @@ class BasicTaskStructure(unittest.TestCase):
         return
 
     def test_grep_print(self):
+        """
+        Test that grep_string correctly filters output.
+        """
         tmp_stdout = StringIO()
         goal = (
             "3e - test task 2\n"
@@ -185,6 +227,9 @@ class BasicTaskStructure(unittest.TestCase):
 
 
 class IOTests(unittest.TestCase):
+    """
+    A set of tests centered on writing to the taskfile and reading the taskfile.
+    """
     def setUp(self):
         if os.path.isfile('tests'):
             raise IOError("tests is not a directory.")
@@ -193,15 +238,19 @@ class IOTests(unittest.TestCase):
         return
 
     def test_write_tasks_to_file(self):
+        """
+        Check that task dictionaries are written to the task file in the
+        expected way.
+        """
         taskdict = TaskDict(taskdir='tests', name='task_test')
         taskdict.add_task("test task 1")
         taskdict.add_task("test task 2")
         taskdict.add_task("test task 3")
         taskdict.finish_task('41')
 
-        expected_line1 = "test task 2 | id:3ea913db45595a91c19c50ce6f977444fa69e82a"
-        expected_line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
-        expected_done_line = "test task 3 | id:417af60a94ee9643bada8dbd01a691af4e064155"
+        expected_line1 = f"test task 2 | id:{TASK2_ID}"
+        expected_line2 = f"test task 1 | id:{TASK1_ID}"
+        expected_done_line = f"test task 3 | id:{TASK3_ID}"
 
         taskdict.write()
         with open('tests/task_test', 'r') as test_file:
@@ -211,8 +260,12 @@ class IOTests(unittest.TestCase):
         with open('tests/.task_test.done', 'r') as test_file:
             lines = test_file.readlines()
             self.assertEqual(lines[0].strip(), expected_done_line)
+        return
 
     def test_delete_if_empty(self):
+        """
+        Check that delete_if_empty really deletes empty taskfiles.
+        """
         taskdict = TaskDict(taskdir='tests', name='task_test')
         taskdict.write(True)
         self.assertFalse(os.path.exists('tests/task_test'))
@@ -220,8 +273,12 @@ class IOTests(unittest.TestCase):
         return
 
     def test_read_tasks_from_file(self):
-        line1 = "test task 2 | id:3ea913db45595a91c19c50ce6f977444fa69e82a"
-        line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
+        """
+        Check that the tasks read from a taskfile are converted into a
+        task dictionary correctly.
+        """
+        line1 = f"test task 2 | id:{TASK2_ID}"
+        line2 = f"test task 1 | id:{TASK1_ID}"
         with open('tests/task_test', 'w') as test_file:
             test_file.write(line1 + '\n' + line2)
         taskdict = TaskDict(taskdir='tests', name='task_test')
@@ -230,8 +287,13 @@ class IOTests(unittest.TestCase):
             TASK2_ID: {'id': TASK2_ID, 'text': "test task 2"},
         }
         self.assertEqual(taskdict.tasks, goal)
+        return
 
     def test_read_plain_tasks_from_file(self):
+        """
+        Check that tasks manually written to taskfile, without hash, are
+        interpreted and hashed upon read.
+        """
         line1 = "test task 1"
         line2 = "test task 2"
         with open('tests/task_test', 'w') as test_file:
@@ -253,23 +315,38 @@ class IOTests(unittest.TestCase):
 
 
 class BasicParserOperation(unittest.TestCase):
+    """
+    A set of tests for the parser.
+
+    Note: these were more helpful when setting up the program, and are less
+    useful now. These tests probably won't grow.
+    """
     def test_list(self):
+        "Check that -l is captured"
         input_args = ["-l", "othertasks"]
         (options, _) = _build_parser().parse_args(input_args)
         self.assertTrue(options.name == "othertasks")
 
     def test_finish(self):
+        "Check that -f is captured"
         input_args = ["-f", "3f"]
         (options, _) = _build_parser().parse_args(input_args)
         self.assertTrue(options.finish == "3f")
 
     def test_delete_finished(self):
+        "Check that -D is captured"
         input_args = ["-D"]
         (options, _) = _build_parser().parse_args(input_args)
         self.assertTrue(options.delete_finished)
 
 
 class IntegrationTests(unittest.TestCase):
+    """
+    A set of end-to-end tests.
+
+    Calls are placed by simulating main() calls on the function. The status of
+    the taskfile and the printed statements are checked.
+    """
     def tearDown(self):
         if os.path.exists('integration_task_test'):
             os.remove('integration_task_test')
@@ -277,53 +354,145 @@ class IntegrationTests(unittest.TestCase):
             os.remove('.integration_task_test.done')
 
     def test_sample_run(self):
+        """
+        Perform a sample run, testing the file status and print status at each
+        step.
+
+        The tasks performed are the following:
+
+        1. Add a task to the file
+        2. Add a second task to the file
+        3. Mark the second task done.
+        4. Edit the first task.
+        5. Add a task with a tag.
+        """
+        tmp_stdout = StringIO()
+        print_args = ["-l", "integration_task_test"]
+
         # Add a task to the file
         input_args = ["-l", "integration_task_test", "test task 1"]
         main(input_args=input_args)
         with open("integration_task_test", "r") as tfile:
             lines = tfile.readlines()
-            expected_line = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
-            self.assertTrue(lines[0].strip(), expected_line)
+            expected_line = f"test task 1 | id:{TASK1_ID}"
+            self.assertTrue(lines[0].strip() == expected_line)
+
+        self.compare_to_output(
+            tmp_stdout,
+            print_args,
+            expected=(
+                "3 - test task 1\n"
+            ),
+            msg="Adding first task to file failed."
+        )
 
         # Add a second task
         input_args = ["-l", "integration_task_test", "test task 2"]
         main(input_args=input_args)
         with open("integration_task_test", "r") as tfile:
             lines = tfile.readlines()
-            expected_line1 = "test task 2 | id:3ea913db45595a91c19c50ce6f977444fa69e82a"
-            expected_line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
-            self.assertTrue(lines[0].strip(), expected_line1)
-            self.assertTrue(lines[1].strip(), expected_line2)
+            expected_line1 = f"test task 2 | id:{TASK2_ID}"
+            expected_line2 = f"test task 1 | id:{TASK1_ID}"
+            self.assertTrue(lines[0].strip() == expected_line1)
+            self.assertTrue(lines[1].strip() == expected_line2)
+
+        error_msg = "Adding second task failed."
+        expected = (
+            "3e - test task 2\n"
+            "3f - test task 1\n"
+        )
+        self.compare_to_output(tmp_stdout, print_args, expected, msg=error_msg)
 
         # Mark second task done
         input_args = ["-l", "integration_task_test", "-f", "3e"]
         main(input_args=input_args)
         with open("integration_task_test", "r") as tfile:
             lines = tfile.readlines()
-            expected_line2 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d"
+            expected_line2 = f"test task 1 | id:{TASK1_ID}"
             self.assertEqual(lines[0].strip(), expected_line2)
         with open(".integration_task_test.done", 'r') as tfiledone:
             lines = tfiledone.readlines()
-            expected_line1 = "test task 2 | id:3ea913db45595a91c19c50ce6f977444fa69e82a"
+            expected_line1 = f"test task 2 | id:{TASK2_ID}"
             self.assertEqual(lines[0].strip(), expected_line1)
+
+        self.compare_to_output(
+            tmp_stdout, print_args,
+            expected=(
+                "3 - test task 1\n"
+            ),
+            msg="Marking second task as done failed."
+        )
+
+        self.compare_to_output(
+            tmp_stdout,
+            print_args + ['--done'],
+            expected=(
+                "3 - test task 2\n"
+            ),
+            msg="Printing done list failed."
+        )
 
         # Edit first task to fourth task
         input_args = ['-l', 'integration_task_test', '-e', '3', 'test task 4']
         main(input_args=input_args)
         with open("integration_task_test", "r") as tfile:
             lines = tfile.readlines()
-            expected_line = "test task 4 | id:84328fb5212fb9f5a743101d9508414299370217"
+            expected_line = f"test task 4 | id:{TASK4_ID}"
             self.assertEqual(lines[0].strip(), expected_line, msg="Edit failed.")
 
+        self.compare_to_output(
+            tmp_stdout,
+            print_args,
+            expected=(
+                "8 - test task 4\n"
+            ),
+            msg="Editing of task failed."
+        )
+
         # Add first task with tag
-        input_args = ['-l', 'integration_task_test', 'test task 1', '--tag', 'testtag']
+        input_args = ['-l', 'integration_task_test',
+                      'test task 1', '--tag', 'testtag']
         main(input_args=input_args)
         with open("integration_task_test", "r") as tfile:
             lines = tfile.readlines()
-            expected_line1 = "test task 1 | id:3fa2e7254e7ce263b186a7ab33dbc492f4138f6d; tags:testtag"
-            expected_line2 = "test task 4 | id:84328fb5212fb9f5a743101d9508414299370217"
+            expected_line1 = f"test task 1 | id:{TASK1_ID}; tags:testtag"
+            expected_line2 = f"test task 4 | id:{TASK4_ID}"
             self.assertEqual(lines[0].strip(), expected_line1)
             self.assertEqual(lines[1].strip(), expected_line2)
+
+        self.compare_to_output(
+            tmp_stdout,
+            print_args + ['--showtags'],
+            expected=(
+                "3 - test task 1 | tags: testtag\n"
+                "8 - test task 4\n"
+            ),
+            msg="Print with showtag failed."
+        )
+
+        self.compare_to_output(
+            tmp_stdout,
+            print_args,
+            expected=(
+                "3 - test task 1\n"
+                "8 - test task 4\n"
+            ),
+            msg="Print without showtag failed."
+        )
+        return
+
+    def compare_to_output(self, io_, print_args, expected, msg=''):
+        """
+        Run main with print args and assert that the result is what is
+        expected. Note that this is full of side-effects. It advances main, and
+        populates the StringIO instance.
+        """
+        # Empty StringIO by going to beginning and truncating the rest away
+        io_.seek(0)
+        io_.truncate(0)
+        with contextlib.redirect_stdout(io_):
+            main(input_args=print_args)
+        self.assertEqual(io_.getvalue(), expected, msg)
         return
 
 
