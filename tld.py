@@ -24,7 +24,6 @@ class TaskDict():
         {
           'id': <hash_id>,
           'text': <summary_text>,
-          'creation_date': <creation_date>,
           ... other metadata ...
         }
     """
@@ -48,7 +47,7 @@ class TaskDict():
                 with open(path, 'r') as tfile:
                     tasklines = [taskline.strip()
                                  for taskline in tfile if taskline]
-                    tasks = map(self._task_from_taskline, tasklines)
+                    tasks = map(_task_from_taskline, tasklines)
                     for task in tasks:
                         getattr(self, kind)[task['id']] = task
         return
@@ -62,7 +61,7 @@ class TaskDict():
         matches = list(
             filter(lambda id_: id_.startswith(prefix), self.tasks.keys())
         )
-        if len(matches) == 0:
+        if matches == 0:
             raise KeyError("Prefix {} not in tasklist.".format(prefix))
         if len(matches) > 1:
             raise IOError("Ambiguous prefix: {}.".format(prefix))
@@ -72,7 +71,7 @@ class TaskDict():
         """
         Create a task with associated text.
         """
-        id_ = self._hash(text)
+        id_ = _hash(text)
         self.tasks[id_] = {'id': id_, 'text': text}
         if tags:
             self.tasks[id_]['tags'] = ','.join(tag for tag in tags)
@@ -102,7 +101,7 @@ class TaskDict():
                 raise IOError("perl-string {} malformed.".format('s/' + text))
             text = re.sub(find, repl, task['text'])
         task['text'] = text
-        task['id'] = self._hash(text)
+        task['id'] = _hash(text)
         if tags:
             task['tags'] = ','.join(tags)
         return
@@ -135,30 +134,20 @@ class TaskDict():
             if os.path.isdir(path):
                 raise IOError("Invalid task file. File is a directory.")
             tasks = sorted(getattr(self, kind).values(),
-                    key=operator.itemgetter('id'))
+                           key=operator.itemgetter('id'))
             if tasks or not delete_if_empty:
                 with open(path, 'w') as tfile:
-                    for taskline in self._tasklines_from_tasks(tasks):
+                    for taskline in _tasklines_from_tasks(tasks):
                         tfile.write(taskline)
             elif not tasks and os.path.isfile(path):
                 os.remove(path)
         return
 
-    def _tasklines_from_tasks(self, tasks):
-        """
-        Parse a set of tasks (e.g. taskdict.tasks.values()) into tasklines
-        suitable to be written to a file.
-        """
-        tasklines = []
-        for task in tasks:
-            metapairs = [metapair for metapair in task.items()
-                         if metapair[0] != 'text']
-            meta_str = "; ".join("{}:{}".format(*metapair)
-                                 for metapair in metapairs)
-            tasklines.append('{} | {}\n'.format(task['text'], meta_str))
-        return tasklines
-
-    def print_list(self,
+    # pylint complains about this method having too many arguments. But as the
+    # arguments are clear and have sane defaults, I simply disable the warning.
+    # It would also be possible to pass in the options datastructure directly,
+    # but that would lengthen the control logic in this function.
+    def print_list(self,            # pylint: disable=too-many-arguments
                    kind='tasks',
                    quiet=False,
                    grep_string='',
@@ -168,8 +157,7 @@ class TaskDict():
         Output tasklist.
         """
         tasks = dict(getattr(self, kind).items())
-        for id_, prefix in self._prefixes(tasks).items():
-            tasks[id_]['prefix'] = prefix
+        set_task_prefixes(tasks)
         plen = max(
             map(lambda t: len(t['prefix']), tasks.values())
         ) if tasks else 0
@@ -197,65 +185,6 @@ class TaskDict():
                 report += ' | tags: ' + ', '.join(tags.split(','))
             print(report)
         return
-
-    def _hash(self, text):
-        """
-        Return the SHA1 hash of the input string.
-        """
-        bytestring = text.encode(encoding='utf-8')
-        return hashlib.sha1(bytestring).hexdigest()
-
-    def _task_from_taskline(self, taskline):
-        """
-        Parse a taskline from a tasks file.
-
-        A taskline should be in the format:
-
-            summary text ... | meta1:meta1_value,meta2:meta2_value,...
-
-        If the taskline has only the summary text, then the hash and metadata
-        will be generated automatically upon reading. Thus it is possible to
-        edit the taskfile in a plain text editor simply.
-
-        The task returned will be a dictionary such as:
-
-            { 'id': <hash id>,
-              'text': <summary text>,
-               ... other metadata ... }
-        """
-        if '|' in taskline:
-            text, _, meta = taskline.rpartition('|')
-            task = {'text': text.strip()}
-            for piece in meta.strip().split(';'):
-                key, value = piece.split(':')
-                task[key.strip()] = value.strip()
-        else:
-            text = taskline.strip()
-            task = {'text': text, 'id': self._hash(text)}
-        return task
-
-    def _prefixes(self, ids):
-        """
-        Return a mapping of ids to prefixes.
-
-        Each prefix is the shortest possible substring of the ID that
-        uniquely identifies it among the given group of IDs.
-        """
-        prefixes = {}
-        for id_ in ids:
-            others = set(ids).difference([id_])
-            found = False
-            # iteratively test if id prefix is long enough to be unique
-            for i in range(1, len(id_)+1):
-                prefix = id_[:i]
-                if not any(map(lambda other: other.startswith(prefix), others)):
-                    prefixes[id_] = prefix
-                    found = True
-                    break
-            if not found:
-                raise KeyError("Unresolvable hash collision occurred.")
-        return prefixes
-
 
 def _build_parser():
     """
@@ -338,6 +267,96 @@ def _build_parser():
                       help="Show dates.")
     parser.add_option_group(output)
     return parser
+
+
+def _tasklines_from_tasks(tasks):
+    """
+    Parse a set of tasks (e.g. taskdict.tasks.values()) into tasklines
+    suitable to be written to a file.
+    """
+    tasklines = []
+    for task in tasks:
+        metapairs = [metapair for metapair in task.items()
+                     if metapair[0] != 'text']
+        meta_str = "; ".join("{}:{}".format(*metapair)
+                             for metapair in metapairs)
+        tasklines.append('{} | {}\n'.format(task['text'], meta_str))
+    return tasklines
+
+
+def _task_from_taskline(taskline):
+    """
+    Parse a taskline from a tasks file.
+
+    A taskline should be in the format:
+
+        summary text ... | meta1:meta1_value,meta2:meta2_value,...
+
+    If the taskline has only the summary text, then the hash and metadata
+    will be generated automatically upon reading. Thus it is possible to
+    edit the taskfile in a plain text editor simply.
+
+    The task returned will be a dictionary such as:
+
+        { 'id': <hash id>,
+          'text': <summary text>,
+           ... other metadata ... }
+    """
+    if '|' in taskline:
+        text, _, meta = taskline.rpartition('|')
+        task = {'text': text.strip()}
+        for piece in meta.strip().split(';'):
+            key, value = piece.split(':')
+            task[key.strip()] = value.strip()
+    else:
+        text = taskline.strip()
+        task = {'text': text, 'id': _hash(text)}
+    return task
+
+
+def _prefixes(ids):
+    """
+    Return a mapping of ids to prefixes.
+
+    Each prefix is the shortest possible substring of the ID that
+    uniquely identifies it among the given group of IDs.
+    """
+    prefixes = {}
+    for id_ in ids:
+        others = set(ids).difference([id_])
+        found = False
+        # iteratively test if id prefix is long enough to be unique
+        for i in range(1, len(id_)+1):
+            prefix = id_[:i]
+            # The pf-prefix kwarg silences a pyling cell-var-from-loop warning.
+            # This is safe since prefix is set on the previous line. It would
+            # also work to use id_[:i] directly in loop, but I find that a bit
+            # harder to read.
+            if not any(map(lambda other, pf=prefix: other.startswith(pf), others)):
+                prefixes[id_] = prefix
+                found = True
+                break
+        if not found:
+            raise KeyError("Unresolvable hash collision occurred.")
+    return prefixes
+
+
+def _hash(text):
+    """
+    Return the SHA1 hash of the input string.
+    """
+    bytestring = text.encode(encoding='utf-8')
+    return hashlib.sha1(bytestring).hexdigest()
+
+
+def set_task_prefixes(tasks):
+    """
+    Assign computed prefixes to tasks.
+    """
+    for id_, prefix in _prefixes(tasks).items():
+        tasks[id_]['prefix'] = prefix
+    return
+
 
 def main(input_args=None):
     """
