@@ -4,7 +4,7 @@
 tld.py
 
 tld is a tool for people who want to do things, but who might also want a bit
-of organization.
+of flexibility.
 
 tld (pronounced "told", based off of Steve Losh's t.py but with a LD twist) is
 a simple command line tool that works like a (somewhat) minimal list manager.
