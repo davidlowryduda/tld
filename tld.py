@@ -86,12 +86,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import argparse
 import datetime
 import hashlib
 import os
 import operator
 import re
-from optparse import OptionParser, OptionGroup
 
 
 class TaskDict():
@@ -281,83 +281,79 @@ def set_task_prefixes(tasks):
 def _build_parser():
     """
     Create the command line parser.
-
-    Note: this uses optparse, which is (apparently) deprecated.
     """
-    usage = "Usage: %prog [-t DIR] [-l LIST] [options] [TEXT]"
-    parser = OptionParser(usage=usage)
+    usage = "Usage: %(prog)s [-t DIR] [-l LIST] [options] [TEXT]"
+    parser = argparse.ArgumentParser(usage=usage)
+    parser.add_argument("text", nargs='*', metavar="TEXT")
 
-    actions = OptionGroup(parser, "Actions",
-                          "If no actions are specified the TEXT "
-                          "will be added as a new task.")
-    actions.add_option("-e", "--edit",
-                       dest="edit", default="",
-                       help="edit TASK. Can also use s/old/new",
-                       metavar="TASK")
-    actions.add_option("-f", "--finish",
-                       dest="finish",
-                       help="mark TASK as finished",
-                       metavar="TASK")
-    actions.add_option("-r", "--remove",
-                       dest="remove",
-                       help="remove TASK from list, without marking it 'done'.",
-                       metavar="TASK")
-    actions.add_option("-D", "--delete-finished",
-                       dest="delete_finished",
+    actions = parser.add_argument_group(
+        'Actions',
+        "If no actions are specified the TEXT will be added as a new task."
+    )
+    actions.add_argument("-e", "--edit",
+                         dest="edit", default="",
+                         help="edit TASK. Can also use s/old/new",
+                         metavar="TASK")
+    actions.add_argument("-f", "--finish",
+                         dest="finish",
+                         help="mark TASK as finished",
+                         metavar="TASK")
+    actions.add_argument("-r", "--remove",
+                         dest="remove",
+                         help="remove TASK from list, without marking it 'done'.",
+                         metavar="TASK")
+    actions.add_argument("-D", "--delete-finished",
+                         dest="delete_finished",
+                         action="store_true", default=False,
+                         help="delete finished items to save space")
+
+    entry = parser.add_argument_group("Entry Options")
+    entry.add_argument("--tag",
+                       dest="opttag",
+                       action="append",
+                       help="add TAG to tags",
+                       metavar="TAG")
+    entry.add_argument("--date",
+                       dest="dated",
                        action="store_true", default=False,
-                       help="delete finished items to save space")
-    parser.add_option_group(actions)
+                       help="Include date in metadata")
 
-    entry = OptionGroup(parser, "Entry Options")
-    entry.add_option("--tag",
-                     dest="opttag",
-                     action="append",
-                     help="add TAG to tags",
-                     metavar="TAG")
-    entry.add_option("--date",
-                     dest="dated",
-                     action="store_true", default=False,
-                     help="Include date in metadata")
-    parser.add_option_group(entry)
+    config = parser.add_argument_group("Configuration Options")
+    config.add_argument("-l", "--list",
+                        dest="name", default="tasks",
+                        help="examine LIST",
+                        metavar="LIST")
+    config.add_argument("-t", "--task-dir",
+                        dest="taskdir", default="",
+                        help="work in DIR", metavar="DIR")
+    config.add_argument("-d", "--delete-if-empty",
+                        dest="delete_if_empty",
+                        action="store_true", default=False,
+                        help="delete the task file if it becomes empty")
 
-    config = OptionGroup(parser, "Configuration Options")
-    config.add_option("-l", "--list",
-                      dest="name", default="tasks",
-                      help="examine LIST",
-                      metavar="LIST")
-    config.add_option("-t", "--task-dir",
-                      dest="taskdir", default="",
-                      help="work in DIR", metavar="DIR")
-    config.add_option("-d", "--delete-if-empty",
-                      dest="delete_if_empty",
-                      action="store_true", default=False,
-                      help="delete the task file if it becomes empty")
-    parser.add_option_group(config)
-
-    output = OptionGroup(parser, "Output Options")
-    output.add_option("--done",
-                      dest='done',
-                      action="store_true", default=False,
-                      help="List done tasks instead of unfinished ones.")
-    output.add_option("-q", "--quiet",
-                      dest="quiet",
-                      action="store_true", default=False,
-                      help="Print less detail (e.g. no task IDs)")
-    output.add_option("-g", "--grep",
-                      dest="grep_string",
-                      default='',
-                      help=("Print only tasks containing WORD. "
-                            "This is case insensitive"),
-                      metavar="WORD")
-    output.add_option("--showtags",
-                      dest="showtags",
-                      action="store_true", default=False,
-                      help="Show tags.")
-    output.add_option("--showdates",
-                      dest="showdates",
-                      action="store_true", default=False,
-                      help="Show dates.")
-    parser.add_option_group(output)
+    output = parser.add_argument_group("Output Options")
+    output.add_argument("--done",
+                        dest='done',
+                        action="store_true", default=False,
+                        help="List done tasks instead of unfinished ones.")
+    output.add_argument("-q", "--quiet",
+                        dest="quiet",
+                        action="store_true", default=False,
+                        help="Print less detail (e.g. no task IDs)")
+    output.add_argument("-g", "--grep",
+                        dest="grep_string",
+                        default='',
+                        help=("Print only tasks containing WORD. "
+                              "This is case insensitive"),
+                        metavar="WORD")
+    output.add_argument("--showtags",
+                        dest="showtags",
+                        action="store_true", default=False,
+                        help="Show tags.")
+    output.add_argument("--showdates",
+                        dest="showdates",
+                        action="store_true", default=False,
+                        help="Show dates.")
     return parser
 
 
@@ -445,31 +441,31 @@ def main(input_args=None):
     """
     Primary entry point. Parse command line and interpret taskdict.
     """
-    (options, args) = _build_parser().parse_args(args=input_args)
-    taskdict = TaskDict(taskdir=options.taskdir, name=options.name)
-    text = ' '.join(args).strip()
-    if options.finish:
-        taskdict.finish_task(options.finish)
-        taskdict.write(options.delete_if_empty)
-    elif options.remove:
-        taskdict.remove_task(options.remove)
-        taskdict.write(options.delete_if_empty)
-    elif options.delete_finished:
+    args = _build_parser().parse_args(args=input_args)
+    taskdict = TaskDict(taskdir=args.taskdir, name=args.name)
+    text = ' '.join(args.text).strip()
+    if args.finish:
+        taskdict.finish_task(args.finish)
+        taskdict.write(args.delete_if_empty)
+    elif args.remove:
+        taskdict.remove_task(args.remove)
+        taskdict.write(args.delete_if_empty)
+    elif args.delete_finished:
         taskdict.delete_finished()
-        taskdict.write(options.delete_if_empty)
-    elif options.edit:
-        taskdict.edit_task(options.edit, text, tags=options.opttag)
-        taskdict.write(options.delete_if_empty)
+        taskdict.write(args.delete_if_empty)
+    elif args.edit:
+        taskdict.edit_task(args.edit, text, tags=args.opttag)
+        taskdict.write(args.delete_if_empty)
     elif text:
-        taskdict.add_task(text, tags=options.opttag, dated=options.dated)
-        taskdict.write(options.delete_if_empty)
+        taskdict.add_task(text, tags=args.opttag, dated=args.dated)
+        taskdict.write(args.delete_if_empty)
     else:
-        kind = 'tasks' if not options.done else 'done'
+        kind = 'tasks' if not args.done else 'done'
         taskdict.print_list(kind=kind,
-                            quiet=options.quiet,
-                            grep_string=options.grep_string,
-                            showtags=options.showtags,
-                            showdates=options.showdates)
+                            quiet=args.quiet,
+                            grep_string=args.grep_string,
+                            showtags=args.showtags,
+                            showdates=args.showdates)
 
 if __name__ == "__main__":
     main()

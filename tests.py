@@ -344,19 +344,19 @@ class BasicParserOperation(unittest.TestCase):
     def test_list(self):
         "Check that -l is captured"
         input_args = ["-l", "othertasks"]
-        (options, _) = _build_parser().parse_args(input_args)
+        options = _build_parser().parse_args(input_args)
         self.assertTrue(options.name == "othertasks")
 
     def test_finish(self):
         "Check that -f is captured"
         input_args = ["-f", "3f"]
-        (options, _) = _build_parser().parse_args(input_args)
+        options = _build_parser().parse_args(input_args)
         self.assertTrue(options.finish == "3f")
 
     def test_delete_finished(self):
         "Check that -D is captured"
         input_args = ["-D"]
-        (options, _) = _build_parser().parse_args(input_args)
+        options = _build_parser().parse_args(input_args)
         self.assertTrue(options.delete_finished)
 
 

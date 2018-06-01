@@ -9,10 +9,10 @@
 # I do this pathologically often from within vim using the following
 # nnoremap ,t :silent exec "!echo python tests.py >> test_commands \| redraw!<CR>
 
-if ! [ -p "test_commands" ]; then
-  mkfifo test_commands
+if ! [ -p "commands_testing" ]; then
+  mkfifo commands_testing
 fi
 
 while true; do
-  bash -c "$(cat test_commands)";
+  bash -c "$(cat commands_testing)";
 done
