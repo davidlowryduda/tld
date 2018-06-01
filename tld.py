@@ -4,6 +4,7 @@
 A tool.
 """
 
+import datetime
 import hashlib
 import os
 import operator
@@ -67,7 +68,7 @@ class TaskDict():
             raise IOError("Ambiguous prefix: {}.".format(prefix))
         return self.tasks[matches[0]]
 
-    def add_task(self, text, tags=()):
+    def add_task(self, text, tags=(), dated=False):
         """
         Create a task with associated text.
         """
@@ -75,6 +76,8 @@ class TaskDict():
         self.tasks[id_] = {'id': id_, 'text': text}
         if tags:
             self.tasks[id_]['tags'] = ','.join(tag for tag in tags)
+        if dated:
+            self.tasks[id_]['date'] = datetime.date.today()
         return
 
     def delete_finished(self):
@@ -159,7 +162,8 @@ class TaskDict():
                    kind='tasks',
                    quiet=False,
                    grep_string='',
-                   showtags=False):
+                   showtags=False,
+                   showdates=False):
         """
         Output tasklist.
         """
@@ -169,15 +173,24 @@ class TaskDict():
         plen = max(
             map(lambda t: len(t['prefix']), tasks.values())
         ) if tasks else 0
+        if showdates:
+            dlen = max(
+                map(lambda t: len(t.get('date', '')), tasks.values())
+            ) if tasks else 0
         task_values = list(tasks.values())
         task_values.sort(key=operator.itemgetter('id'))
         for taskval in task_values:
             if grep_string.lower() not in taskval['text'].lower():
                 continue
-            if not quiet:
-                start = '{} - '.format(taskval['prefix'].ljust(plen))
+            if showdates:
+                start = taskval.get('date', '')
+                start = start.ljust(dlen)
+                if dlen:
+                    start += ' | '
             else:
                 start = ''
+            if not quiet:
+                start += '{} - '.format(taskval['prefix'].ljust(plen))
             report = start + taskval['text']
             tags = taskval.get('tags', '')
             if showtags and tags:
@@ -274,6 +287,18 @@ def _build_parser():
                        help="delete finished items to save space")
     parser.add_option_group(actions)
 
+    entry = OptionGroup(parser, "Entry Options")
+    entry.add_option("--tag",
+                     dest="opttag",
+                     action="append",
+                     help="add TAG to tags",
+                     metavar="TAG")
+    entry.add_option("--date",
+                     dest="dated",
+                     action="store_true", default=False,
+                     help="Include date in metadata")
+    parser.add_option_group(entry)
+
     config = OptionGroup(parser, "Configuration Options")
     config.add_option("-l", "--list",
                       dest="name", default="tasks",
@@ -286,11 +311,6 @@ def _build_parser():
                       dest="delete_if_empty",
                       action="store_true", default=False,
                       help="delete the task file if it becomes empty")
-    config.add_option("--tag",
-                      dest="opttag",
-                      action="append",
-                      help="add TAG to tags",
-                      metavar="TAG")
     parser.add_option_group(config)
 
     output = OptionGroup(parser, "Output Options")
@@ -312,6 +332,10 @@ def _build_parser():
                       dest="showtags",
                       action="store_true", default=False,
                       help="Show tags.")
+    output.add_option("--showdates",
+                      dest="showdates",
+                      action="store_true", default=False,
+                      help="Show dates.")
     parser.add_option_group(output)
     return parser
 
@@ -335,14 +359,15 @@ def main(input_args=None):
         taskdict.edit_task(options.edit, text, tags=options.opttag)
         taskdict.write(options.delete_if_empty)
     elif text:
-        taskdict.add_task(text, tags=options.opttag)
+        taskdict.add_task(text, tags=options.opttag, dated=options.dated)
         taskdict.write(options.delete_if_empty)
     else:
         kind = 'tasks' if not options.done else 'done'
         taskdict.print_list(kind=kind,
                             quiet=options.quiet,
                             grep_string=options.grep_string,
-                            showtags=options.showtags)
+                            showtags=options.showtags,
+                            showdates=options.showdates)
 
 if __name__ == "__main__":
     main()
