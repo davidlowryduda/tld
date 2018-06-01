@@ -283,7 +283,11 @@ def _build_parser():
     Create the command line parser.
     """
     usage = "Usage: %(prog)s [-t DIR] [-l LIST] [options] [TEXT]"
-    parser = argparse.ArgumentParser(usage=usage)
+    epilog = (
+        "Author: David Lowry-Duda <david@lowryduda.com>."
+        "\nPlease report any bugs to https://github.com/davidlowryduda/tld"
+    )
+    parser = argparse.ArgumentParser(usage=usage, epilog=epilog)
     parser.add_argument("text", nargs='*', metavar="TEXT")
 
     actions = parser.add_argument_group(
@@ -379,7 +383,7 @@ def _prefixes(ids):
         # iteratively test if id prefix is long enough to be unique
         for i in range(1, len(id_)+1):
             prefix = id_[:i]
-            # The pf-prefix kwarg silences a pyling cell-var-from-loop warning.
+            # The pf-prefix kwarg silences a pylint cell-var-from-loop warning.
             # This is safe since prefix is set on the previous line. It would
             # also work to use id_[:i] directly in loop, but I find that a bit
             # harder to read.
