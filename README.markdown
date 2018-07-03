@@ -1,5 +1,7 @@
 # tld.py
 
+[![Build Status](https://travis-ci.com/davidlowryduda/tld.svg?branch=master)](https://travis-ci.com/davidlowryduda/tld)
+
 `tld` is a tool for people who want to do things, but who might also want a
 bit of flexibility.
 
