@@ -34,6 +34,7 @@ TASK2_ID = '3ea913db45595a91c19c50ce6f977444fa69e82a'
 TASK3_ID = '417af60a94ee9643bada8dbd01a691af4e064155'
 TASK4_ID = '84328fb5212fb9f5a743101d9508414299370217'
 
+
 class BasicTaskStructure(unittest.TestCase):
     """
     A set of tests for each of the basic capabilities of a task dictionary.
@@ -516,10 +517,20 @@ class IntegrationTests(unittest.TestCase):
         return
 
 
-if __name__ == "__main__":
+def do_tests():
+    """
+    Run the test suite.
+
+    A few files are created for the test suite. If and of these files exist,
+    this aborts and exits with an error.
+    """
     FILENAMES = ['integration_task_test', '.integration_task_test.done',
                  'tests/task_test', 'tests/.task_test.done']
     if any(os.path.exists(filename) for filename in FILENAMES):
         raise IOError("One of the test_task files already exists. "
                       "Aborting to not overwrite.")
     unittest.main(verbosity=2)
+
+
+if __name__ == "__main__":
+    do_tests()

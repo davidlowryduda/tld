@@ -152,7 +152,7 @@ $ tld "Read Steve Losh's .vimrc."
 Listing your items is even easier -- just use `tld`:
 
 ```bash
-$ t
+$ tld
 1 - Read Steve Losh's .vimrc.
 a - Tell my wife I love her.
 b - Prove the Riemann Hypothesis.
