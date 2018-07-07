@@ -97,8 +97,8 @@ conflicts.
 
 ## Installing tld
 
-`tld` requires [Python][] 3 and a bash-like shell. It works on Linux, OS X, and
-Windows ([with the linux subsystem][subsystem]).
+`tld` requires [Python][] 3.6+ and a bash-like shell. It works on Linux, OS X,
+and Windows ([with the linux subsystem][subsystem]).
 
 [Python]: http://python.org/
 [subsystem]: https://docs.microsoft.com/en-us/windows/wsl/install-win10
@@ -109,6 +109,15 @@ First, [download][] the newest version or clone the github repository
 (`git clone https://github.com/davidlowryduda/tld`).
 
 [download]: https://github.com/davidlowryduda/tld/archive/master.zip
+
+You can also use pip through a command like
+
+```bash
+python3 -m pip install --user --upgrade tld-task
+```
+
+> If you use pip, then you can replace 'python3 ~/path/to/tld.py` with `tld`
+> in the examples below.
 
 Next, decide where you want to keep your lists.  I put mine in `~/notes/tasks`
 (I keep notes created from other note utilities in `~/notes/` too). Create that
