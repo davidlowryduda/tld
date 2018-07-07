@@ -93,6 +93,8 @@ import os
 import operator
 import re
 
+VERSION = "1.0.0"
+
 
 class TaskDict():
     """
@@ -358,6 +360,10 @@ def _build_parser():
                         dest="showdates",
                         action="store_true", default=False,
                         help="Show dates.")
+    output.add_argument("-v", "--version",
+                        dest="print_version",
+                        action="store_true", default=False,
+                        help="Print version and quit.")
     return parser
 
 
@@ -441,6 +447,22 @@ def _task_from_taskline(taskline):
     return task
 
 
+def print_version():
+    """
+    Print version and exit.
+    """
+    output = (
+        f"tld.py {VERSION}\n"
+        "Copyright 2018 David Lowry-Duda.\n"
+        "Licence: MIT License <https://opensource.org/licenses/MIT>.\n"
+        "This is permissive free software: you are free to change and redistribute it.\n"
+        "There is NO WARRANTY, to the extent permitted by law.\n\n"
+        "Written by David Lowry-Duda (based on ideas of Steve J Losh)."
+    )
+    print(output)
+    return
+
+
 def main(input_args=None):
     """
     Primary entry point. Parse command line and interpret taskdict.
@@ -448,7 +470,9 @@ def main(input_args=None):
     args = _build_parser().parse_args(args=input_args)
     taskdict = TaskDict(taskdir=args.taskdir, name=args.name)
     text = ' '.join(args.text).strip()
-    if args.finish:
+    if args.print_version:
+        print_version()
+    elif args.finish:
         taskdict.finish_task(args.finish)
         taskdict.write(args.delete_if_empty)
     elif args.remove:
@@ -470,6 +494,7 @@ def main(input_args=None):
                             grep_string=args.grep_string,
                             showtags=args.showtags,
                             showdates=args.showdates)
+
 
 if __name__ == "__main__":
     main()
