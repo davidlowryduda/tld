@@ -1,3 +1,1 @@
 Separate out edit-tag and include perl regex. | id:4ff1ba2bcab1af1436083b35439d0637bdb9baed; tags:Feature
-Consider allowing tag-grep. | id:5feec93004963e8edf40060c28d007b4c46e269c; tags:Feature
-Add date integration test, including format checks. | id:9807bca34e684bd07d9e96082cf3512c85cd1b92; tags:Testing; date:2018-06-01
