@@ -62,10 +62,11 @@ more lasting.
 License Info
 ------------
 
-This is released under the MIT License.
-
+This is released under the MIT License. Initial parts written by Steve Losh,
+later additions from David Lowry-Duda.
 
 Copyright (c) 2018 David Lowry-Duda <david@lowryduda.com>.
+Copyright (c) 2009 Steve Losh
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -93,7 +94,7 @@ import os
 import operator
 import re
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 
 class TaskDict():
@@ -236,12 +237,14 @@ class TaskDict():
                    quiet=False,
                    grep_string='',
                    showtags=False,
-                   showdates=False):
+                   showdates=False,
+                   longname=False):
         """
         Output tasklist.
         """
         tasks = dict(getattr(self, kind).items())
-        set_task_prefixes(tasks)
+        minsize = 6 if longname else 0
+        set_task_prefixes(tasks, minsize=minsize)
         plen = max(
             map(lambda t: len(t['prefix']), tasks.values())
         ) if tasks else 0
@@ -271,11 +274,11 @@ class TaskDict():
         return
 
 
-def set_task_prefixes(tasks):
+def set_task_prefixes(tasks, minsize=0):
     """
     Assign computed prefixes to tasks.
     """
-    for id_, prefix in _prefixes(tasks).items():
+    for id_, prefix in _prefixes(tasks, minsize=minsize).items():
         tasks[id_]['prefix'] = prefix
     return
 
@@ -323,6 +326,10 @@ def _build_parser():
                        dest="dated",
                        action="store_true", default=False,
                        help="Include date in metadata")
+    entry.add_argument("--long",
+                       dest="longname",
+                       action="store_true", default=False,
+                       help="print longer task ids")
 
     config = parser.add_argument_group("Configuration Options")
     config.add_argument("-l", "--list",
@@ -375,7 +382,7 @@ def _hash(text):
     return hashlib.sha1(bytestring).hexdigest()
 
 
-def _prefixes(ids):
+def _prefixes(ids, minsize=0):
     """
     Return a mapping of ids to prefixes.
 
@@ -387,7 +394,7 @@ def _prefixes(ids):
         others = set(ids).difference([id_])
         found = False
         # iteratively test if id prefix is long enough to be unique
-        for i in range(1, len(id_)+1):
+        for i in range(minsize + 1, len(id_)+1):
             prefix = id_[:i]
             # The pf-prefix kwarg silences a pylint cell-var-from-loop warning.
             # This is safe since prefix is set on the previous line. It would
@@ -454,6 +461,7 @@ def print_version():
     output = (
         "tld.py {}\n"
         "Copyright 2018 David Lowry-Duda.\n"
+        "Copyright 2009 Steve Losh.\n"
         "Licence: MIT License <https://opensource.org/licenses/MIT>.\n"
         "This is permissive free software: you are free to change and redistribute it.\n"
         "There is NO WARRANTY, to the extent permitted by law.\n\n"
@@ -493,7 +501,8 @@ def main(input_args=None):
                             quiet=args.quiet,
                             grep_string=args.grep_string,
                             showtags=args.showtags,
-                            showdates=args.showdates)
+                            showdates=args.showdates,
+                            longname=args.longname)
 
 
 if __name__ == "__main__":
