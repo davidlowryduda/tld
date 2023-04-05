@@ -255,7 +255,9 @@ class TaskDict():
         task_values = list(tasks.values())
         task_values.sort(key=operator.itemgetter('id'))
         for taskval in task_values:
-            if grep_string.lower() not in taskval['text'].lower():
+            tags = taskval.get('tags', '')
+            if (grep_string.lower() not in taskval['text'].lower()
+                    and not grep_string.lower() in tags):
                 continue
             if showdates:
                 start = taskval.get('date', '')
@@ -267,7 +269,6 @@ class TaskDict():
             if not quiet:
                 start += '{} - '.format(taskval['prefix'].ljust(plen))
             report = start + taskval['text']
-            tags = taskval.get('tags', '')
             if showtags and tags:
                 report += ' | tags: ' + ', '.join(tags.split(','))
             print(report)
