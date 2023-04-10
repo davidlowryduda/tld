@@ -326,6 +326,15 @@ music
 shopping
 ```
 
+The given `grep` option will print only tasks containing the word,
+case-insensitively. This includes if the tags contain that word.
+
+```bash
+$ tld --grep Album
+7 - Buy Phoenix album.
+```
+
+
 ### Multiple Lists
 
 
